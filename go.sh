@@ -1,0 +1,1 @@
+clang  -g -fsanitize=address main.c -o eb && ./eb
