@@ -470,8 +470,8 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
     char current_code = tolower(code[index]);
 
     switch(current_code) {
-        // and
-        case 'a': 
+        // add
+        case '+': 
         {
             em_stack_item* one = stack_top_minus(state, 1);
             em_stack_item* two = stack_top(state);
@@ -589,14 +589,81 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
         }
         break;
 
+        // and
+        case 'a': 
+        {
+            em_stack_item* one = stack_top_minus(state, 1);
+            em_stack_item* two = stack_top(state);
+
+            if (one == NULL || two == NULL) {
+                em_panic(code, index, len, state, "Operation and requires two items on the stack");
+            }
+
+            if (one->code != '?' || two->code != '?') {
+                em_panic(code, index, len, state, 
+                    "Operation and requires two arguments of ? (boolean) type. Got %c and %c", one->code, two->code);
+            }
+
+            stack_pop(state);
+            stack_pop(state);
+
+            int ptr = stack_push(state);
+            state->stack[ptr].signage = one->signage;
+            state->stack[ptr].code = '?';
+            state->stack[ptr].u.v_bool = one->u.v_bool && two->u.v_bool;
+            state->stack[ptr].size = 0;
+        }
+        break;
+
         // or
-        case 'o': break;
+        case 'o': 
+        {
+            em_stack_item* one = stack_top_minus(state, 1);
+            em_stack_item* two = stack_top(state);
+
+            if (one == NULL || two == NULL) {
+                em_panic(code, index, len, state, "Operation or requires two items on the stack");
+            }
+
+            if (one->code != '?' || two->code != '?') {
+                em_panic(code, index, len, state, 
+                    "Operation or requires two arguments of ? (boolean) type. Got %c and %c", one->code, two->code);
+            }
+
+            stack_pop(state);
+            stack_pop(state);
+
+            int ptr = stack_push(state);
+            state->stack[ptr].signage = one->signage;
+            state->stack[ptr].code = '?';
+            state->stack[ptr].u.v_bool = one->u.v_bool || two->u.v_bool;
+            state->stack[ptr].size = 0;
+        }
+        break;
 
         // not
-        case '!': break;
+        case '!': 
+        {
+            em_stack_item* one = stack_top(state);
+          
+            if (one == NULL) {
+                em_panic(code, index, len, state, "Operation not requires an item on top of the stack");
+            }
 
-        // add
-        case '+': break;
+            if (one->code != '?') {
+                em_panic(code, index, len, state, 
+                    "Operation not requires one argument of ? (boolean) type. Got %c", one->code);
+            }
+
+            stack_pop(state);
+
+            int ptr = stack_push(state);
+            state->stack[ptr].signage = one->signage;
+            state->stack[ptr].code = '?';
+            state->stack[ptr].u.v_bool = !one->u.v_bool;
+            state->stack[ptr].size = 0;
+        }
+        break;
 
         // subtract
         case '-': break;

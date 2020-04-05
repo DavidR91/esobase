@@ -1,0 +1,13 @@
+# OR
+ml ?y ?y   mb o   ml ?y   md a
+ml ?n ?y   mb o   ml ?y   md a
+ml ?n ?n   mb o   ml ?n   md a
+
+# AND
+ml ?y ?y   mb a   ml ?y   md a
+ml ?n ?y   mb a   ml ?n   md a
+ml ?n ?n   mb a   ml ?n   md a
+
+# NOT
+ml ?y    mb !   ml ?n   md a
+ml ?n    mb !   ml ?y   md a

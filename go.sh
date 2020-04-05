@@ -1,5 +1,7 @@
 clang  -g -fsanitize=address main.c -o eb
 
+passed=0
+
 for file in tests/*.{pass,fail}
 do
     echo "********** $file **********"
@@ -16,6 +18,7 @@ do
                 if [[ $file == *.pass ]]; then
                     ./eb "$assertion" || exit 1
                     printf "\e[32m*************OK*************\e[39m\n"
+                    ((passed+=1))
                 else 
 
                     # Case should fail
@@ -26,6 +29,7 @@ do
                         exit 1
                     else 
                         printf "\e[32m*************CASE FAILURE EXPECTED: OK*************\e[39m\n"
+                        ((passed+=1))
                     fi
 
 
@@ -33,3 +37,5 @@ do
             fi
     done < $file
 done 
+
+printf "\e[32m************* $passed cases passed *************\e[39m\n"
