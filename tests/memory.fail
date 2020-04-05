@@ -1,0 +1,5 @@
+# Memory alloc without size
+mm a
+
+# Zero size free
+ml 10_ mm a f

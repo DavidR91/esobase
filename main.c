@@ -1,5 +1,4 @@
 // TODO
-// Stack pop after argument use
 // String tables
 // if and loops
 
@@ -149,7 +148,7 @@ char safe_get(const char* code, int index, int len) {
 void log_verbose(const char* format, ...) {
     va_list argptr;
     va_start(argptr, format);
-    vfprintf(stderr, format, argptr);
+    // vfprintf(stderr, format, argptr);
     va_end(argptr);
 }
 
