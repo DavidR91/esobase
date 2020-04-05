@@ -1,0 +1,18 @@
+# 1 byte adds
+ml 13_ 17_  mb a  ml 110_  md a
+
+# 16 bit adds
+ml 2990_ 2120_  mb a  ml 2 1110_  md a
+
+# 32 bit adds
+ml 4 32995_ 4 1811_  mb a  ml 4 34806_  md a
+
+# 64 bit adds
+ml 8 4294967295_ 8 4294967295_  mb a  ml 8 8589934590_  md a
+
+# f32 adds
+ml  f 1.570_  f 1.571_  mb a  ml f 3.141_ md a
+
+# f64 adds
+ml  d 3.14159_  d 6.6689_  mb a ml d 9.81049_ md a
+

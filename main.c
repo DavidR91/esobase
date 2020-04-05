@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 typedef enum {
+    EM_BOOLEAN,
     EM_MEMORY, 
     EM_LITERAL,
     EM_STACK,
@@ -49,9 +50,16 @@ void run(const char* i, int len);
 void dump_instructions(const char* code, int index, int len, em_state* state);
 void dump_stack(em_state* state);
 
-int main() {
-    const char* c = "ml 832_ 832_832_ 832_832_ 4 32_ mm a mm f mdt";
-    run(c, strlen(c));
+int main(int argc, char** argv) {
+
+    if (argc < 2) {
+        fprintf(stderr, "At least one argument required\n");
+        exit(0);
+    }
+
+    fprintf(stdout, "Called with: %s\n", argv[1]);
+
+    run(argv[1], strlen(argv[1]));
     return 0;
 }
 
@@ -70,21 +78,65 @@ void em_panic(const char* code, int index, int len, em_state* state, const char*
     abort();
 }
 
-int stack_top_ptr(em_state* state) {
-    if (state->stack_ptr <= 0) {
-        return 0;
+int stack_push(em_state* state) {
+    state->stack_ptr++;
+    return state->stack_ptr;
+}
+
+// int stack_top_ptr(em_state* state) {
+//     if (state->stack_ptr <= 0) {
+//         return 0;
+//     } else {
+//         return state->stack_ptr - 1;
+//     }
+// }
+
+em_stack_item* stack_pop(em_state* state) {
+    if (state->stack_ptr < 0) {
+        return NULL;
     } else {
-        return state->stack_ptr - 1;
+        em_stack_item* top = &state->stack[state->stack_ptr];
+
+        state->stack_ptr--;
+
+        return top;
     }
 }
 
-void increment_stack_ptr(em_state* state) {
-    state->stack_ptr++;
+em_stack_item* stack_top_minus(em_state* state, int minus) {
+    if (state->stack_ptr - minus < 0) {
+        return NULL;
+    } else {
+        return &state->stack[state->stack_ptr - minus];
+    }
 }
 
-void decrement_stack_ptr(em_state* state) {
-    state->stack_ptr--;
+em_stack_item* stack_top(em_state* state) {
+    if (state->stack_ptr < 0) {
+        return NULL;
+    } else {
+        return &state->stack[state->stack_ptr];
+    }
 }
+
+bool is_stack_item_numeric(em_stack_item* item) {
+
+    switch(item->code) {
+        case '1': 
+        case '2': 
+        case '4': 
+        case '8': 
+        case 'f':
+        case 'd':
+            return true;
+        default:
+            return false;
+    }
+}
+
+// void after_stack_push(em_state* state) {
+//     state->stack_ptr++;
+// }
 
 char safe_get(const char* code, int index, int len) {
     if (index < 0 || index >= len) {
@@ -153,13 +205,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '?': 
         {
-            state->stack[state->stack_ptr].signage = false;
+            int top = stack_push(state);
+            state->stack[top].signage = false;
             
             char v = tolower(safe_get(code, index+1, len));
 
-            state->stack[state->stack_ptr].u.v_bool = (v == 'y' || v == 't');
-            state->stack[state->stack_ptr].code = current_code;
-            increment_stack_ptr(state);
+            state->stack[top].u.v_bool = (v == 'y' || v == 't');
+            state->stack[top].code = current_code;
 
             log_verbose("DEBUG VERBOSE\t\tPush bool literal %c\n", v);
         }
@@ -167,17 +219,18 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '1': 
         {
-            state->stack[state->stack_ptr].signage = false;
-            
-            char v = tolower(safe_get(code, index+1, len));
+            char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            uint8_t v = atoi(test);
+            free(test);
 
-            state->stack[state->stack_ptr].u.v_byte = v;
-            state->stack[state->stack_ptr].code = current_code;
-            increment_stack_ptr(state);
+            int top = stack_push(state);
+            state->stack[top].signage = state->signed_flag;
+            state->stack[top].code = current_code;
+            state->stack[top].u.v_byte = v;
 
-            log_verbose("DEBUG VERBOSE\t\tPush byte literal %c\n", v);
+            log_verbose("DEBUG VERBOSE\t\tPush u8 literal %d\n", v);
         }
-        return 1;
+        return size_to_skip;
 
         case '2': 
         {
@@ -185,11 +238,10 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             uint16_t v = atoi(test);
             free(test);
 
-            state->stack[state->stack_ptr].signage = state->signed_flag;
-            state->stack[state->stack_ptr].code = current_code;
-            state->stack[state->stack_ptr].u.v_int32 = v;
-
-            increment_stack_ptr(state);
+            int top = stack_push(state);
+            state->stack[top].signage = state->signed_flag;
+            state->stack[top].code = current_code;
+            state->stack[top].u.v_int32 = v;
 
             log_verbose("DEBUG VERBOSE\t\tPush u16 literal %d\n", v);
         }
@@ -201,11 +253,10 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             uint32_t v = atoi(test);
             free(test);
 
-            state->stack[state->stack_ptr].signage = state->signed_flag;
-            state->stack[state->stack_ptr].code = current_code;
-            state->stack[state->stack_ptr].u.v_int32 = v;
-
-            increment_stack_ptr(state);
+            int top = stack_push(state);
+            state->stack[top].signage = state->signed_flag;
+            state->stack[top].code = current_code;
+            state->stack[top].u.v_int32 = v;
 
             log_verbose("DEBUG VERBOSE\t\tPush u32 literal %d\n", v);
         }
@@ -214,14 +265,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
         case '8': 
         {
             char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
-            uint64_t v = atoi(test);
+            uint64_t v = strtol(test, NULL, 10);
             free(test);
 
-            state->stack[state->stack_ptr].signage = state->signed_flag;
-            state->stack[state->stack_ptr].code = current_code;
-            state->stack[state->stack_ptr].u.v_int64 = v;
-
-            increment_stack_ptr(state);
+            int top = stack_push(state);
+            state->stack[top].signage = state->signed_flag;
+            state->stack[top].code = current_code;
+            state->stack[top].u.v_int64 = v;
 
             log_verbose("DEBUG VERBOSE\t\tPush u64 literal %llu\n", v);
         }
@@ -233,11 +283,10 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             float v = strtod(test, NULL);
             free(test);
 
-            state->stack[state->stack_ptr].signage = state->signed_flag;
-            state->stack[state->stack_ptr].code = current_code;
-            state->stack[state->stack_ptr].u.v_float = v;
-
-            increment_stack_ptr(state);
+            int top = stack_push(state);
+            state->stack[top].signage = state->signed_flag;
+            state->stack[top].code = current_code;
+            state->stack[top].u.v_float = v;
 
             log_verbose("DEBUG VERBOSE\t\tPush float literal %f\n", v);
         }
@@ -249,11 +298,10 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             double v = strtod(test, NULL);
             free(test);
 
-            state->stack[state->stack_ptr].signage = state->signed_flag;
-            state->stack[state->stack_ptr].code = current_code;
-            state->stack[state->stack_ptr].u.v_double = v;
-
-            increment_stack_ptr(state);
+            int top = stack_push(state);
+            state->stack[top].signage = state->signed_flag;
+            state->stack[top].code = current_code;
+            state->stack[top].u.v_double = v;
 
             log_verbose("DEBUG VERBOSE\t\tPush double literal %f\n", v);
         }
@@ -296,7 +344,7 @@ void dump_stack_item(em_stack_item* item) {
 
     switch(item->code) {
         case '?': fprintf(stdout, "%d", item->u.v_bool); break;
-        case '1': fprintf(stdout, "%c", item->u.v_byte);break;
+        case '1': fprintf(stdout, "%d", item->u.v_byte);break;
         case '2': fprintf(stdout, "%d", item->u.v_int16);break;
         case '4': fprintf(stdout, "%d", item->u.v_int32);break;
         case '8': fprintf(stdout, "%llu", item->u.v_int64);break;
@@ -318,7 +366,7 @@ void dump_stack_item(em_stack_item* item) {
 
 void dump_stack(em_state* state) {
     fprintf(stdout, "=== Bottom of stack ===\n");
-    for (int i = 0; i < state->stack_ptr; i++) {
+    for (int i = 0; i <= state->stack_ptr; i++) {
         dump_stack_item(&state->stack[i]);
     }
     fprintf(stdout, "=== Top of stack ===\n");
@@ -346,11 +394,14 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
 
         // Guess at top level codes
          switch (code[i]) {
-            case 'm': type_colour = "\033[0;36m"; break;
-            case 'l': type_colour = "\033[0;32m"; break;
-            case 's': type_colour = "\033[0;33m"; break;
-            case 'c': type_colour = "\033[0;34m"; break;
-            case 'd': type_colour = "\033[0;35m"; break;
+            case 'm': 
+            case 'l':
+            case 's':
+            case 'c':
+            case 'd':
+            case 'b':
+                type_colour = "\033[0;36m"; 
+            break;
             default: type_colour =  "\033[0m"; break;                
         }
 
@@ -392,6 +443,192 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
     fprintf(stdout, "\n(col %d)\n", index + 1);
 }
 
+
+int run_stack(em_state* state, const char* code, int index, int len) {
+
+    char current_code = tolower(code[index]);
+
+     log_verbose("DEBUG VERBOSE\t\tStack start '%c'\n", current_code);
+
+    switch(current_code) {
+
+        // pop
+        case 'p':         
+            log_verbose("DEBUG VERBOSE\t\tStack pop\n");
+            
+            if (stack_pop(state) == NULL) {
+                em_panic(code, index, len, state, "Cannot pop from stack: stack is empty");
+            }
+
+            return 0;
+    }
+
+    return 0;
+}
+
+int run_boolean(em_state* state, const char* code, int index, int len) {
+
+    char current_code = tolower(code[index]);
+
+    switch(current_code) {
+        // and
+        case 'a': 
+        {
+            em_stack_item* one = stack_top_minus(state, 1);
+            em_stack_item* two = stack_top(state);
+
+            if (one == NULL || two == NULL) {
+                em_panic(code, index, len, state, "Operation add requires two items on the stack to add");
+            }
+
+            if (!is_stack_item_numeric(one) || !is_stack_item_numeric(two)) {
+                em_panic(code, index, len, state, 
+                    "Operation add requires two arguments of numeric type. Got %c and %c", one->code, two->code);
+            }
+
+            stack_pop(state);
+            stack_pop(state);
+
+            switch(one->code) {
+                case '1': 
+                    switch(two->code) { 
+                        case '1':  {                            
+                            int ptr = stack_push(state);
+                            state->stack[ptr].signage = one->signage;
+                            state->stack[ptr].code = '1';
+                            state->stack[ptr].u.v_byte = one->u.v_byte + two->u.v_byte;
+                            state->stack[ptr].size = 0;
+                        }
+                        break;
+                        default:
+                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        break;
+                    }
+                break; 
+                
+                case '2': 
+                    switch(two->code) { 
+                        case '2':  {                            
+                            int ptr = stack_push(state);
+                            state->stack[ptr].signage = one->signage;
+                            state->stack[ptr].code = '2';
+                            state->stack[ptr].u.v_int16 = one->u.v_int16 + two->u.v_int16;
+                            state->stack[ptr].size = 0;
+                        }
+                        break;
+                        default:
+                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        break;
+                    }
+                break;
+                
+                case '4': 
+                    switch(two->code) { 
+                        case '4':  {                            
+                            int ptr = stack_push(state);
+                            state->stack[ptr].signage = one->signage;
+                            state->stack[ptr].code = '4';
+                            state->stack[ptr].u.v_int32 = one->u.v_int32 + two->u.v_int32;
+                            state->stack[ptr].size = 0;
+                        }
+                        break;
+                        default:
+                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        break;
+                    }
+                break;
+                
+                case '8': 
+                    switch(two->code) { 
+                        case '8':  {                            
+                            int ptr = stack_push(state);
+                            state->stack[ptr].signage = one->signage;
+                            state->stack[ptr].code = '8';
+                            state->stack[ptr].u.v_int64 = one->u.v_int64 + two->u.v_int64;
+                            state->stack[ptr].size = 0;
+                        }
+                        break;
+                        default:
+                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        break;
+                    }
+                break;
+                
+                case 'f': 
+                    switch(two->code) { 
+                        case 'f':  {                            
+                            int ptr = stack_push(state);
+                            state->stack[ptr].signage = one->signage;
+                            state->stack[ptr].code = 'f';
+                            state->stack[ptr].u.v_float = one->u.v_float + two->u.v_float;
+                            state->stack[ptr].size = 0;
+                        }
+                        break;
+                        default:
+                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        break;
+                    }   
+                break;
+
+                case 'd': 
+                    switch(two->code) { 
+                        case 'd':  {                            
+                            int ptr = stack_push(state);
+                            state->stack[ptr].signage = one->signage;
+                            state->stack[ptr].code = 'd';
+                            state->stack[ptr].u.v_double = one->u.v_double + two->u.v_double;
+                            state->stack[ptr].size = 0;
+                        }
+                        break;
+                        default:
+                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        break;
+                    }   
+                break;
+            }
+
+        }
+        break;
+
+        // or
+        case 'o': break;
+
+        // not
+        case '!': break;
+
+        // add
+        case '+': break;
+
+        // subtract
+        case '-': break;
+
+        // multiply
+        case '*': break;
+
+        // divide
+        case '/': break;
+
+        // mod
+        case '%': break;
+
+        // logical not
+        case '~': break;
+
+        // and
+        case '&': break;
+
+        // left shift
+        case '<': break;
+
+        // right shift
+        case '>': break;
+
+    }
+
+    return 0;
+
+}
+
 int run_debug(em_state* state, const char* code, int index, int len) {
 
     char current_code = tolower(code[index]);
@@ -405,6 +642,27 @@ int run_debug(em_state* state, const char* code, int index, int len) {
         // Trace
         case 't':
         dump_instructions(code, index, len, state);
+        break;
+
+        // Assert that the two stack items present contain equivalent values
+        case 'a':
+        {
+            em_stack_item* one = stack_top_minus(state, 1);
+            em_stack_item* two = stack_top(state);
+
+            if (one == NULL || two == NULL) {
+                em_panic(code, index, len, state, "Operation assert requires two items on the stack to compare");
+            }
+
+            if (memcmp(&one->u, &two->u, sizeof(one->u)) != 0) {
+                em_panic(code, index, len, state, "Assertion failed");
+            }
+
+            stack_pop(state);
+            stack_pop(state);
+            
+            log_verbose("DEBUG VERBOSE\t\tAssertion successful\n");
+        }
         break;
 
         default:
@@ -427,7 +685,11 @@ int run_memory(em_state* state, const char* code, int index, int len) {
         case 'a':
         {
             // We need an int on the stack
-            em_stack_item* top = &state->stack[stack_top_ptr(state)];
+            em_stack_item* top = stack_top(state);
+
+            if (top == NULL) {
+                em_panic(code, index, len, state, "Insufficient arguments to memory allocation: requires integer size on stack top");
+            }
 
             uint32_t real_size = 0;
 
@@ -442,12 +704,15 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             void* arb = malloc(real_size);
             memset(arb, 0, real_size);
 
-            state->stack[state->stack_ptr].signage = false;
-            state->stack[state->stack_ptr].code = '*';
-            state->stack[state->stack_ptr].u.v_ptr = arb;
-            state->stack[state->stack_ptr].size = real_size;
+            stack_pop(state);
 
-            increment_stack_ptr(state);
+            int ptr = stack_push(state);
+
+            state->stack[ptr].signage = false;
+            state->stack[ptr].code = '*';
+            state->stack[ptr].u.v_ptr = arb;
+            state->stack[ptr].size = real_size;
+
             log_verbose("DEBUG VERBOSE\t\tAllocated %db of memory @ %p\n", real_size, arb);
 
             return 0;
@@ -457,7 +722,11 @@ int run_memory(em_state* state, const char* code, int index, int len) {
         case 'f': 
         {
             // We need a MANAGED pointer on top of the stack
-            em_stack_item* top = &state->stack[stack_top_ptr(state)];
+            em_stack_item* top = stack_top(state);
+
+            if (top == NULL) {
+                em_panic(code, index, len, state, "Insufficient arguments to memory free: requires pointer on stack top");
+            }
 
             if (top->code != '*') {
                 em_panic(code, index, len, state, "Memory free requires pointer top of stack - found %c\n", top->code);            
@@ -475,7 +744,7 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             top->u.v_ptr = 0;
             top->size = 0;
 
-            decrement_stack_ptr(state);   
+            stack_pop(state);   
             return 0;
         }
 
@@ -499,6 +768,7 @@ void run(const char* code, int len) {
     em_state state;
     memset(&state, 0, sizeof(em_state));
     state.stack_size = 4096;
+    state.stack_ptr = -1;
     state.stack = malloc(sizeof(em_stack_item) * state.stack_size);
     memset(state.stack, 0, sizeof(em_stack_item) * state.stack_size);
 
@@ -508,6 +778,11 @@ void run(const char* code, int len) {
 
         if (isspace(code[i])) {
             continue;
+        }
+
+        if (code[i] == '#') {
+            log_verbose("DEBUG VERBOSE\t\tTerminating at comment at index %d\n", i);
+            return;
         }
 
         log_verbose("DEBUG VERBOSE\t\t%d = %c\n", i, code[i]);
@@ -520,6 +795,7 @@ void run(const char* code, int len) {
                 char new_mode = safe_get(code, i+1, len);
                 state.last_mode_change = i;
                 switch(tolower(new_mode)) {
+                    case 'b': mode = EM_BOOLEAN; break;
                     case 'm': mode = EM_MEMORY; break;
                     case 'l': mode = EM_LITERAL; break;
                     case 's': mode = EM_STACK; break;
@@ -543,9 +819,10 @@ void run(const char* code, int len) {
             switch(mode) {
                 case EM_MEMORY: i += run_memory(&state, code, i, len); break;
                 case EM_LITERAL: i += run_literal(&state, code, i, len); break;
-                case EM_STACK: break;
+                case EM_STACK: i += run_stack(&state, code, i, len); break;
                 case EM_CC: break;
-                case EM_DEBUG: i += run_debug(&state, code, i, len);break;
+                case EM_DEBUG: i += run_debug(&state, code, i, len); break;
+                case EM_BOOLEAN: i += run_boolean(&state, code, i, len); break;
             }
             break;
         }       
