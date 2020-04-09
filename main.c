@@ -1,6 +1,8 @@
 // TODO
 // String tables
 // if and loops
+// callable functions (?)
+// user defined types
 
 #include <stdlib.h>
 #include <string.h>
@@ -15,7 +17,8 @@ typedef enum {
     EM_LITERAL,
     EM_STACK,
     EM_CC,
-    EM_DEBUG
+    EM_DEBUG,
+    EM_UDT
 
 } ESOMODE;
 
@@ -42,10 +45,13 @@ typedef struct {
     int stack_size;
     int last_mode_change;
     bool signed_flag;
+    int file_line;
+    const char* filename;
 
 } em_state;
 
-void run(const char* i, int len);
+void run_file(const char* file);
+void run(const char* filename, const char* i, int len);
 void dump_instructions(const char* code, int index, int len, em_state* state);
 void dump_stack(em_state* state);
 
@@ -56,10 +62,39 @@ int main(int argc, char** argv) {
         exit(0);
     }
 
-    fprintf(stdout, "Called with: %s\n", argv[1]);
+    run_file(argv[1]);
 
-    run(argv[1], strlen(argv[1]));
     return 0;
+}
+
+void run_file(const char* file) {
+    FILE* input = fopen(file, "r");
+
+    if (input == NULL) {
+        fprintf(stderr, "Cannot find or open %s\n", file);
+        exit(1);
+        return;
+    }
+
+    fseek(input, 0, SEEK_END);
+
+    int length = ftell(input);
+
+    rewind(input);
+
+    char* file_content = malloc(length+1);
+    memset(file_content, 0, length+1);
+
+    if (fread(file_content, 1, length, input) != length) {
+        fprintf(stderr, "Could not successfully read the entire length of %s\n", file);
+        exit(1);
+    }
+
+    file_content[length] = 0;
+
+    run(file, file_content, strlen(file_content));
+
+    fclose(input);
 }
 
 void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...) {
@@ -148,7 +183,7 @@ char safe_get(const char* code, int index, int len) {
 void log_verbose(const char* format, ...) {
     va_list argptr;
     va_start(argptr, format);
-    // vfprintf(stderr, format, argptr);
+    //vfprintf(stderr, format, argptr);
     va_end(argptr);
 }
 
@@ -187,6 +222,21 @@ char* alloc_until(const char* code, int index, int len, char terminator, bool ea
         *size_to_skip = 0;
     }
     return NULL;
+}
+
+
+int run_udt(em_state* state, const char* code, int index, int len) {
+   
+    int size_to_skip = 0;
+
+    char current_code = tolower(code[index]);
+    log_verbose("DEBUG VERBOSE\t\tLiteral start '%c'\n", current_code);
+
+    switch(current_code) {
+        case 'd': break;
+    }
+
+    return size_to_skip;
 }
 
 int run_literal(em_state* state, const char* code, int index, int len) {
@@ -385,6 +435,14 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
         precontext = 0;
     }
 
+    // Clamp the precontext so we start AFTER any newline
+    for(int i = index; i >= precontext; i--) {
+        if (code[i] == '\n') {
+            precontext = i + 1;
+            break;
+        }
+    }
+
     const char* type_colour = NULL;
 
     fprintf(stdout, "\t");
@@ -439,7 +497,7 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
 
     }
 
-    fprintf(stdout, "\n(col %d)\n", index + 1);
+    fprintf(stdout, "\n\n(%s line %d col %d)\n", state->filename, (state->file_line+1),index + 1);
 }
 
 
@@ -829,26 +887,40 @@ int run_memory(em_state* state, const char* code, int index, int len) {
     }
 }
 
-void run(const char* code, int len) {
+void run(const char* filename, const char* code, int len) {
 
     em_state state;
     memset(&state, 0, sizeof(em_state));
     state.stack_size = 4096;
     state.stack_ptr = -1;
     state.stack = malloc(sizeof(em_stack_item) * state.stack_size);
+    state.filename = filename;
     memset(state.stack, 0, sizeof(em_stack_item) * state.stack_size);
 
     ESOMODE mode = EM_MEMORY;
 
     for (int i = 0; i < len; i++) {
 
-        if (isspace(code[i])) {
+        if (code[i] == '#') {
+            log_verbose("DEBUG VERBOSE\t\tTerminating at comment at index %d\n", i);
+
+            for(int current = i; current < len; current++) {
+                if (code[current] == '\n') {
+                    i = current - 1;
+                    break;
+                }
+            }
+
             continue;
         }
 
-        if (code[i] == '#') {
-            log_verbose("DEBUG VERBOSE\t\tTerminating at comment at index %d\n", i);
-            return;
+        if (code[i] == '\n') {
+            state.file_line++;
+            continue;
+        }
+
+        if (isspace(code[i]) || code[i] == '\r') {
+            continue;
         }
 
         log_verbose("DEBUG VERBOSE\t\t%d = %c\n", i, code[i]);
@@ -867,8 +939,9 @@ void run(const char* code, int len) {
                     case 's': mode = EM_STACK; break;
                     case 'c': mode = EM_CC; break;
                     case 'd': mode = EM_DEBUG; break;
+                    case 'u': mode = EM_UDT; break;
                 default:
-                    em_panic(code, i, len, &state, "Unknown mode change '%c'\n", code[i]);
+                    em_panic(code, i, len, &state, "Unknown mode change '%c'\n", new_mode);
                 }
 
                 log_verbose("DEBUG VERBOSE\t\tMODE CHANGED TO %d\n", mode);
@@ -889,6 +962,7 @@ void run(const char* code, int len) {
                 case EM_CC: break;
                 case EM_DEBUG: i += run_debug(&state, code, i, len); break;
                 case EM_BOOLEAN: i += run_boolean(&state, code, i, len); break;
+                case EM_UDT: i += run_udt(&state, code, i, len); break;
             }
             break;
         }       
