@@ -41,7 +41,7 @@ typedef struct {
 typedef struct {
     const char* name;
     char* types;
-    char* field_names; // each separated by @
+    char** field_names;
     int size; // total size in bytes of the fields inside
 } em_type_definition;
 
@@ -161,6 +161,19 @@ em_stack_item* stack_pop(em_state* state) {
         return top;
     }
 }
+
+em_stack_item* stack_pop_by(em_state* state, int amount) {
+    if (state->stack_ptr < 0) {
+        return NULL;
+    } else {
+        em_stack_item* top = &state->stack[state->stack_ptr];
+
+        state->stack_ptr -= amount;
+
+        return top;
+    }
+}
+
 
 em_stack_item* stack_top_minus(em_state* state, int minus) {
     if (state->stack_ptr - minus < 0) {
@@ -308,14 +321,14 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             new_type->types = malloc(field_qty->u.v_int32 + 1);
             memset(new_type->types, 0, field_qty->u.v_int32 + 1);
 
+            new_type->field_names = malloc(sizeof(char*) * field_qty->u.v_int32);
+            memset(new_type->field_names, 0, sizeof(char*) * field_qty->u.v_int32);
+
             // We need a TYPE and NAME for each field
             int minus = 1 + (field_qty->u.v_int32 * 2);
 
             // Where we write the type code per field
             int type_code_ptr = 0;
-
-            // How many bytes we need to record the field names
-            int field_names_length = 1; // NUL
 
             for (int field = 1; field <= field_qty->u.v_int32; field++) {
                 em_stack_item* field_name = stack_top_minus(state, minus);
@@ -324,7 +337,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                     em_panic(code, index, len, state, "Expected an s at stack top - %d to define the name of field %d of %s", minus, field, name->u.v_ptr);
                 }
 
-                field_names_length += field_name->size; // size inc NUL gives us space for a seprator
+                new_type->field_names[field-1] = field_name->u.v_ptr;
                 minus--;
 
                 em_stack_item* field_type = stack_top_minus(state, minus);
@@ -343,11 +356,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 new_type->size += code_sizeof(new_type->types[i]);
             }
 
-            // Now we have enough info to actually create space for the field names
-            new_type->field_names = malloc(field_names_length);
-            memset(new_type->field_names, 0, field_names_length);
-
-
+            stack_pop_by(state, 2 + (field_qty->u.v_int32 * 2));
         }
         return size_to_skip;
 
@@ -581,13 +590,17 @@ void dump_types(em_state* state) {
     for(int i = 0; i <= state->type_ptr; i++) {
 
         em_type_definition* type = &state->types[i];
-        printf("%s (%db in size)\n", type->name, type->size);
+        printf("\033[0;36m%s\033[0m (%db in size)\n", type->name, type->size);
 
         for(int t = 0; t < strlen(type->types); t++) {
             printf("%s%c", code_colour_code(type->types[t]), type->types[t]);
         }
+        printf("\033[0m\n\n");
 
-        printf("\033[0m\n");
+         for(int t = 0; t < strlen(type->types); t++) {
+            printf("%s%c\033[0m\t\033[0;36m%s\n\033[0m", code_colour_code(type->types[t]), type->types[t], type->field_names[t]);
+        }
+        printf("\n");
     }
 }
 
