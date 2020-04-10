@@ -1,8 +1,17 @@
-mu
-
-d mytype_ 
-
 ml
 
-4_
-s id_
+4;
+s id;
+
+4;
+s id2;
+
+s mytype;
+4 2;
+
+mu  d
+
+md s 
+u
+
+md s

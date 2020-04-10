@@ -39,6 +39,16 @@ typedef struct {
 } em_stack_item;
 
 typedef struct {
+    const char* name;
+    char* types;
+    char* field_names; // each separated by @
+    int size; // total size in bytes of the fields inside
+} em_type_definition;
+
+typedef struct {
+    em_type_definition* types;
+    int type_ptr;
+    int max_types;
 
     em_stack_item* stack;
     int stack_ptr;
@@ -49,7 +59,6 @@ typedef struct {
     const char* filename;
 
 } em_state;
-
 void run_file(const char* file);
 void run(const char* filename, const char* i, int len);
 void dump_instructions(const char* code, int index, int len, em_state* state);
@@ -125,6 +134,22 @@ int stack_push(em_state* state) {
 //     }
 // }
 
+size_t code_sizeof(char code) {
+    switch(code) {
+        case '?': return sizeof(bool); break;
+        case '1': return sizeof(uint8_t); break;
+        case '2': return sizeof(uint16_t); break;
+        case '4': return sizeof(uint32_t); break;
+        case '8': return sizeof(uint64_t); break;
+        case 'f': return sizeof(float); break;
+        case 'd': return sizeof(double); break;
+        case 's': return sizeof(char*); break;
+        case '*': return sizeof(void*); break;
+        case '^': return sizeof(void*); break;
+    }
+    return 0;
+}
+
 em_stack_item* stack_pop(em_state* state) {
     if (state->stack_ptr < 0) {
         return NULL;
@@ -193,26 +218,32 @@ void log_verbose(const char* format, ...) {
 // len
 char* alloc_until(const char* code, int index, int len, char terminator, bool eat_whitespace, int* size_to_skip) {
 
+    int total_skip = 0;
     int starting_index = index;
 
     while(eat_whitespace && isspace(code[starting_index])) {
+        total_skip++;
         starting_index++;
     }
 
+    int bytes_consumed = 0;
+
     for (int i = starting_index ; i < len; i++) {
+        bytes_consumed++;
+        total_skip++;
         if (code[i] == terminator) {
             
-            int build_length = i - index + 1;
+            int build_length = bytes_consumed + 1;
             char* built = malloc(build_length);
 
             memset(built, 0, build_length);
-            memcpy(built, code+index, i - index);
+            memcpy(built, code+starting_index, i - starting_index);
 
             built[build_length-1] = 0;
 
             if (size_to_skip != NULL) {
                 if (i + 1 < len) {
-                    *size_to_skip = build_length;
+                    *size_to_skip = total_skip;
                 } else {
                     *size_to_skip = -1;
                 }
@@ -239,11 +270,68 @@ int run_udt(em_state* state, const char* code, int index, int len) {
     switch(current_code) {
         case 'd': 
         {
-             char* name = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            em_stack_item* field_qty = stack_top(state);
+            em_stack_item* name = stack_top_minus(state, 1);
 
-            if (name == NULL) {
-                em_panic(code, index, len, state, "Could not find a complete name for type definition: Did you forget to terminate it?");
+            if (field_qty == NULL || field_qty->code != '4') {
+                em_panic(code, index, len, state, "Expected a 4 at stack top to define the quantity of fields for the type");
             }
+
+            if (name == NULL || name->code != 's') {
+                em_panic(code, index, len, state, "Expected an s at stack top - 1 to define the name of the type");
+            }
+
+            if (field_qty->u.v_int32 <= 0) {
+                em_panic(code, index, len, state, "Not allowed to declare type %s with no fields", name->u.v_ptr);
+            }
+
+            state->type_ptr++;
+
+            em_type_definition* new_type = &state->types[state->type_ptr];
+            new_type->name = name->u.v_ptr;
+            new_type->types = malloc(field_qty->u.v_int32 + 1);
+            memset(new_type->types, 0, field_qty->u.v_int32 + 1);
+
+            // We need a TYPE and NAME for each field
+            int minus = 2;
+
+            // Where we write the type code per field
+            int type_code_ptr = 0;
+
+            // How many bytes we need to record the field names
+            int field_names_length = 1; // NUL
+
+            for (int field = 1; field <= field_qty->u.v_int32; field++) {
+                em_stack_item* field_name = stack_top_minus(state, minus);
+
+                if (field_name == NULL || field_name->code != 's') {
+                    em_panic(code, index, len, state, "Expected an s at stack top - %d to define the name of field %d of %s", minus, field, name->u.v_ptr);
+                }
+
+                field_names_length += field_name->size; // size inc NUL gives us space for a seprator
+                minus++;
+
+                em_stack_item* field_type = stack_top_minus(state, minus);
+
+                if (field_qty == NULL) {
+                    em_panic(code, index, len, state, "Expected an item of any type at stack top - %d to define the type of field %d of %s", minus, field, name->u.v_ptr);
+                }
+
+                new_type->types[type_code_ptr] = field_type->code;
+                type_code_ptr++;
+                minus++;
+            }
+
+            // Calculate total size 
+            for(int i = 0; i < field_qty->u.v_int32; i++) {
+                new_type->size += code_sizeof(new_type->types[i]);
+            }
+
+            // Now we have enough info to actually create space for the field names
+            new_type->field_names = malloc(field_names_length);
+            memset(new_type->field_names, 0, field_names_length);
+
+
         }
         return size_to_skip;
 
@@ -285,7 +373,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '1': 
         {
-            char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for byte: Did you forget to terminate it?");
@@ -305,7 +393,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '2': 
         {
-            char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for int16: Did you forget to terminate it?");
@@ -325,7 +413,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '4': 
         {
-            char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for int32: Did you forget to terminate it?");
@@ -345,7 +433,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '8': 
         {
-            char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for int64: Did you forget to terminate it?");
@@ -365,7 +453,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case 'f':  
         {
-            char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for float32: Did you forget to terminate it?");
@@ -385,7 +473,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case 'd':  
         {
-            char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for float64: Did you forget to terminate it?");
@@ -405,13 +493,19 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case 's': 
         {
-             char* text = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+            // Just leaking this right now, need a string table
+            //
+            char* text = alloc_until(code, index+1, len, ';', true, &size_to_skip);
 
             if (text == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for string: Did you forget to terminate it?");
             }
 
-
+            int top = stack_push(state);
+            state->stack[top].signage = state->signed_flag;
+            state->stack[top].code = current_code;
+            state->stack[top].u.v_ptr = text; 
+            state->stack[top].size = strlen(text) + 1; //alloc until is always NUL terminated
 
             log_verbose("DEBUG VERBOSE\t\tPush string literal %s skip %d\n", text, size_to_skip);
         }
@@ -459,8 +553,8 @@ void dump_stack_item(em_stack_item* item) {
         case '8': fprintf(stdout, "%llu", item->u.v_int64);break;
         case 'f': fprintf(stdout, "%f", item->u.v_float);break;
         case 'd': fprintf(stdout, "%f", item->u.v_double);break;
-        case 's': break;
-        case '*': fprintf(stdout, "%p length %d", item->u.v_ptr, item->size); break;break;
+        case 's': fprintf(stdout, "\"%s\\0\" %p length %d", item->u.v_ptr, item->u.v_ptr, item->size);break;
+        case '*': fprintf(stdout, "%p length %d", item->u.v_ptr, item->size); break;
         case '^': break;
     }
 
@@ -479,6 +573,15 @@ void dump_stack(em_state* state) {
         dump_stack_item(&state->stack[i]);
     }
     fprintf(stdout, "=== Top of stack ===\n");
+}
+
+void dump_types(em_state* state) {
+    for(int i = 0; i <= state->type_ptr; i++) {
+
+        em_type_definition* type = &state->types[i];
+        printf("%s (%db in size)\n", type->name, type->size);
+        printf("%s\n", type->types);
+    }
 }
 
 void dump_instructions(const char* code, int index, int len, em_state* state) {
@@ -839,6 +942,11 @@ int run_debug(em_state* state, const char* code, int index, int len) {
         dump_instructions(code, index, len, state);
         break;
 
+        // Type map
+        case 'u':
+        dump_types(state);
+        break;
+
         // Assert that the two stack items present contain equivalent values
         case 'a':
         {
@@ -849,8 +957,15 @@ int run_debug(em_state* state, const char* code, int index, int len) {
                 em_panic(code, index, len, state, "Operation assert requires two items on the stack to compare");
             }
 
-            if (memcmp(&one->u, &two->u, sizeof(one->u)) != 0) {
-                em_panic(code, index, len, state, "Assertion failed");
+            if (one->code == 's' && two->code == 's') {
+                // Do a string compare
+                if (strcmp((const char*)one->u.v_ptr, (const char*)two->u.v_ptr) != 0) {
+                    em_panic(code, index, len, state, "Assertion failed (string compare)");
+                }
+            } else {
+                if (memcmp(&one->u, &two->u, sizeof(one->u)) != 0) {
+                    em_panic(code, index, len, state, "Assertion failed");
+                }
             }
 
             stack_pop(state);
@@ -969,6 +1084,11 @@ void run(const char* filename, const char* code, int len) {
     state.stack = malloc(sizeof(em_stack_item) * state.stack_size);
     state.filename = filename;
     memset(state.stack, 0, sizeof(em_stack_item) * state.stack_size);
+
+    state.type_ptr = -1;
+    state.max_types = 255;
+    state.types = malloc(sizeof(em_type_definition) * state.max_types);
+    memset(state.types, 0, sizeof(em_type_definition) * state.max_types);
 
     ESOMODE mode = EM_MEMORY;
 

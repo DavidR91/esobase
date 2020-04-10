@@ -1,5 +1,26 @@
 # Values should be equivalent whether prefixed with spaces or not
 ml 
-4 1024 _  
-4 1024_ 
+4 1024 ;  
+4 1024;
+md a
+ml
+4  1024 ;
+4 1024;
+md a
+ml
+4    1024    ;4  1024 ;
+md a
+
+# String compares should respect trailing but not leading space
+
+ml 
+s  1024;  
+s 1024;
+md a
+ml
+s   1024;
+s 1024;
+md a
+ml
+s    1024;s  1024;
 md a

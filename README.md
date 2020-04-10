@@ -7,7 +7,7 @@ esobase's name comes from intending it to be a 'base' to build more meaningful l
 
 ## Example
 ```
-ml 4 16_ 4 16_ mb + mm a md s mm f
+ml 4 16; 4 16; mb + mm a md s mm f
 ```
 
 Add together 16 and 16 and allocate a memory buffer to the resulting size. Display the stack and then free the allocated memory
@@ -34,12 +34,12 @@ Push literals onto the stack.
 |---|---|
 | `+` | Toggle signed/unsigned mode. Unsigned is the default. _Signed values are not yet fully implemented_ |
 | `?` | Boolean. Value is the following character - either `t`/`f` or `y`/`n`|
-| `1` | Single byte. The value is built from the next character and every character after it until an `_` is encountered. For example `1123_` builds the byte value `123` |
-| `2` | 16 bit integer. The value is built from the next character and every character after it until an `_` is encountered. For example `2123_` builds the int16 value `123` |
-| `4` | 32 bit integer. The value is built from the next character and every character after it until an `_` is encountered. For example `4123_` builds the int32 value `123` |
-| `8` | 64 bit integer. The value is built from the next character and every character after it until an `_` is encountered. For example `8123_` builds the int64 value `123` |
-| `f` | 32 bit float. The value is built from the next character and every character after it until an `_` is encountered. For example `f123_` builds the float value `123` |
-| `d` | 64 bit float (double). The value is built from the next character and every character after it until an `_` is encountered. For example `d123_` builds the double value `123` |
+| `1` | Single byte. The value is built from the next character and every character after it until an `;` is encountered. For example `1123;` builds the byte value `123` |
+| `2` | 16 bit integer. The value is built from the next character and every character after it until an `;` is encountered. For example `2123;` builds the int16 value `123` |
+| `4` | 32 bit integer. The value is built from the next character and every character after it until an `;` is encountered. For example `4123;` builds the int32 value `123` |
+| `8` | 64 bit integer. The value is built from the next character and every character after it until an `;` is encountered. For example `8123;` builds the int64 value `123` |
+| `f` | 32 bit float. The value is built from the next character and every character after it until an `;` is encountered. For example `f123;` builds the float value `123` |
+| `d` | 64 bit float (double). The value is built from the next character and every character after it until an `;` is encountered. For example `d123;` builds the double value `123` |
 
 
 
