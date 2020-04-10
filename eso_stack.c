@@ -8,8 +8,10 @@
 #include "eso_vm.h"
 #include "eso_log.h"
 
+// Note that this totally erases any content in the address 
 int stack_push(em_state* state) {
     state->stack_ptr++;
+    memset(&state->stack[state->stack_ptr], 0, sizeof(em_stack_item));
     return state->stack_ptr;
 }
 

@@ -159,7 +159,7 @@ void run(const char* filename, const char* code, int len) {
                     case EM_UDT: skip = run_udt(&state, code, i, len); break;
                 }
 
-                log_verbose("DEBUG VERBOSE SKIP %d characters\t\t%d\n", skip);
+                log_verbose("DEBUG VERBOSE SKIP %d characters\n", skip);
 
                 if (skip >= 0) {
                     i += skip;

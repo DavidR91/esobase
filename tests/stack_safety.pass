@@ -1,0 +1,15 @@
+ml
+
+4 1;
+4 2;
+4 3;
+4 4;
+4 5;
+
+ml 4 5; md a
+ml 4 4; md a
+ml 4 3; md a
+ml 4 2; md a
+ml 4 1; md a
+
+

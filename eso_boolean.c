@@ -37,11 +37,12 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             switch(one->code) {
                 case '1': 
                     switch(two->code) { 
-                        case '1':  {                            
+                        case '1':  {            
+                            uint8_t op = one->u.v_byte + two->u.v_byte;
                             int ptr = stack_push(state);
                             state->stack[ptr].signage = one->signage;
                             state->stack[ptr].code = '1';
-                            state->stack[ptr].u.v_byte = one->u.v_byte + two->u.v_byte;
+                            state->stack[ptr].u.v_byte = op;
                             state->stack[ptr].size = 0;
                         }
                         break;
@@ -53,11 +54,12 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                 
                 case '2': 
                     switch(two->code) { 
-                        case '2':  {                            
+                        case '2':  {    
+                            uint16_t op = one->u.v_int16 + two->u.v_int16;
                             int ptr = stack_push(state);
                             state->stack[ptr].signage = one->signage;
                             state->stack[ptr].code = '2';
-                            state->stack[ptr].u.v_int16 = one->u.v_int16 + two->u.v_int16;
+                            state->stack[ptr].u.v_int16 = op;
                             state->stack[ptr].size = 0;
                         }
                         break;
@@ -70,10 +72,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                 case '4': 
                     switch(two->code) { 
                         case '4':  {                            
+                            uint32_t op = one->u.v_int32 + two->u.v_int32;
                             int ptr = stack_push(state);
                             state->stack[ptr].signage = one->signage;
                             state->stack[ptr].code = '4';
-                            state->stack[ptr].u.v_int32 = one->u.v_int32 + two->u.v_int32;
+                            state->stack[ptr].u.v_int32 = op;
                             state->stack[ptr].size = 0;
                         }
                         break;
@@ -86,10 +89,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                 case '8': 
                     switch(two->code) { 
                         case '8':  {                            
+                            uint64_t op =one->u.v_int64 + two->u.v_int64;
                             int ptr = stack_push(state);
                             state->stack[ptr].signage = one->signage;
                             state->stack[ptr].code = '8';
-                            state->stack[ptr].u.v_int64 = one->u.v_int64 + two->u.v_int64;
+                            state->stack[ptr].u.v_int64 = op;
                             state->stack[ptr].size = 0;
                         }
                         break;
@@ -102,10 +106,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                 case 'f': 
                     switch(two->code) { 
                         case 'f':  {                            
+                            float op = one->u.v_float + two->u.v_float;
                             int ptr = stack_push(state);
                             state->stack[ptr].signage = one->signage;
                             state->stack[ptr].code = 'f';
-                            state->stack[ptr].u.v_float = one->u.v_float + two->u.v_float;
+                            state->stack[ptr].u.v_float = op;
                             state->stack[ptr].size = 0;
                         }
                         break;
@@ -118,10 +123,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                 case 'd': 
                     switch(two->code) { 
                         case 'd':  {                            
+                            double op = one->u.v_double + two->u.v_double;
                             int ptr = stack_push(state);
                             state->stack[ptr].signage = one->signage;
                             state->stack[ptr].code = 'd';
-                            state->stack[ptr].u.v_double = one->u.v_double + two->u.v_double;
+                            state->stack[ptr].u.v_double = op;
                             state->stack[ptr].size = 0;
                         }
                         break;
@@ -153,10 +159,12 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             stack_pop(state);
             stack_pop(state);
 
+            bool op = one->u.v_bool && two->u.v_bool;
+
             int ptr = stack_push(state);
             state->stack[ptr].signage = one->signage;
             state->stack[ptr].code = '?';
-            state->stack[ptr].u.v_bool = one->u.v_bool && two->u.v_bool;
+            state->stack[ptr].u.v_bool = op;
             state->stack[ptr].size = 0;
         }
         break;
@@ -179,10 +187,12 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             stack_pop(state);
             stack_pop(state);
 
+            bool op = one->u.v_bool || two->u.v_bool;
+
             int ptr = stack_push(state);
             state->stack[ptr].signage = one->signage;
             state->stack[ptr].code = '?';
-            state->stack[ptr].u.v_bool = one->u.v_bool || two->u.v_bool;
+            state->stack[ptr].u.v_bool = op;
             state->stack[ptr].size = 0;
         }
         break;
@@ -203,10 +213,12 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
 
             stack_pop(state);
 
+            bool op = !one->u.v_bool;
+
             int ptr = stack_push(state);
             state->stack[ptr].signage = one->signage;
             state->stack[ptr].code = '?';
-            state->stack[ptr].u.v_bool = !one->u.v_bool;
+            state->stack[ptr].u.v_bool = op;
             state->stack[ptr].size = 0;
         }
         break;

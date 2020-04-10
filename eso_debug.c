@@ -47,7 +47,7 @@ int run_debug(em_state* state, const char* code, int index, int len) {
                 }
             } else {
                 if (memcmp(&one->u, &two->u, sizeof(one->u)) != 0) {
-                    em_panic(code, index, len, state, "Assertion failed");
+                    em_panic(code, index, len, state, "Assertion failed (%p vs. %p)", one->u.v_ptr, two->u.v_ptr);
                 }
             }
 

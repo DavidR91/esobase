@@ -64,7 +64,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             em_stack_item* of_type = stack_top(state);
 
             if (of_type == NULL || of_type->code != 'u') {
-                em_panic(code, index, len, state, "Expected a u at stack top to get field value");
+                em_panic(code, index, len, state, "Expected a u at stack top to get field value from type");
             }  
 
             em_type_definition* definition = &state->types[of_type->type];
@@ -72,6 +72,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             int field_bytes_start = 0;
             int field_size = 0;
             char field_code = '?';
+            bool found_field = false;
 
             // Find the field by name
             for(int i = 0; i < strlen(definition->types); i++) {
@@ -79,10 +80,15 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 field_size = code_sizeof(field_code);
 
                 if (strcmp(definition->field_names[i], name) == 0) {
+                    found_field = true;
                     break;
                 }
 
                 field_bytes_start += code_sizeof(field_code);
+            }
+
+            if (!found_field) {
+                em_panic(code, index, len, state, "No such field %s on type %s", name, definition->name);
             }
 
             switch(field_code) {
@@ -91,6 +97,14 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                     int top = stack_push(state);
                     state->stack[top].signage = false;
                     state->stack[top].u.v_bool = *(bool*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].code = field_code;
+                }
+                break;
+                case '1':  
+                {
+                    int top = stack_push(state);
+                    state->stack[top].signage = false;
+                    state->stack[top].u.v_byte = *(uint8_t*)(of_type->u.v_ptr + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
                 break;
@@ -110,7 +124,124 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                     state->stack[top].code = field_code;
                 }
                 break;
+                case '8':  
+                {
+                    int top = stack_push(state);
+                    state->stack[top].signage = false;
+                    state->stack[top].u.v_int64 = *(uint64_t*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].code = field_code;
+                }
+                break;
+                case 'f':  
+                {
+                    int top = stack_push(state);
+                    state->stack[top].signage = false;
+                    state->stack[top].u.v_float = *(float*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].code = field_code;
+                }
+                break;
+                case 'd':  
+                {
+                    int top = stack_push(state);
+                    state->stack[top].signage = false;
+                    state->stack[top].u.v_double = *(double*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].code = field_code;
+                }
+                break;
+                case 's': 
+                {
+                    int top = stack_push(state);
+                    state->stack[top].signage = false;
+                    state->stack[top].u.v_ptr = (void*)(*(const char**)(of_type->u.v_ptr + field_bytes_start));
+                    state->stack[top].code = field_code;
+                }
+                break;
+                default:
+                em_panic(code, index, len, state, "Getting field %s of type %c not currently supported", name, field_code);
+                break;
             }
+
+        }
+        return size_to_skip;
+
+        // Set a field in a UDT from the stack
+        case 's':
+        {
+            char* name = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+
+             if (name == NULL) {
+                 em_panic(code, index, len, state, "Could not find a complete name for a field to set: Did you forget to terminate it?");
+             }
+
+            // Object of type must be below value to set on stack
+            em_stack_item* of_type = stack_top_minus(state, 1);
+
+            if (of_type == NULL || of_type->code != 'u') {
+                em_panic(code, index, len, state, "Expected a u at stack top - 1 to set field value into type");
+            }  
+
+            em_type_definition* definition = &state->types[of_type->type];
+
+            int field_bytes_start = 0;
+            int field_size = 0;
+            char field_code = '?';
+            bool found_field = false;
+
+            // Find the field by name
+            for(int i = 0; i < strlen(definition->types); i++) {
+                field_code = definition->types[i];
+                field_size = code_sizeof(field_code);
+
+                if (strcmp(definition->field_names[i], name) == 0) {
+                    found_field = true;
+                    break;
+                }
+
+                field_bytes_start += code_sizeof(field_code);
+            }
+
+            if (!found_field) {
+                em_panic(code, index, len, state, "No such field %s on type %s", name, definition->name);
+            }
+
+            // Item on stack top must be the same type as the field we want to se
+            em_stack_item* top = stack_top(state);
+
+            if (top->code != field_code) {
+                em_panic(code, index, len, state, "Setting field %s requires a value of type %c on top of the stack", name, field_code);
+            }  
+
+            switch(top->code) {
+                case '?':
+                *(bool*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_bool;
+                break;
+                case '1': 
+                *(uint8_t*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_byte;
+                break;
+                case '2':  
+                *(uint16_t*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_int16;
+                break;
+                case '4':  
+                *(uint32_t*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_int32;
+                break;
+                case '8':  
+                *(uint64_t*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_int64;
+                break;
+                case 'f':  
+                *(float*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_float;
+                break;
+                case 'd':  
+                *(double*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_double;
+                break;
+                case 's':
+                *(const char**)(of_type->u.v_ptr + field_bytes_start) = top->u.v_ptr;
+                break;
+                default: 
+                em_panic(code, index, len, state, "Setting field %s of type %c not currently supported", name, field_code);
+                break;
+            }
+
+            stack_pop(state);
 
         }
         return size_to_skip;
