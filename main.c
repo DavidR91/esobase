@@ -202,13 +202,17 @@ char* alloc_until(const char* code, int index, int len, char terminator, bool ea
     for (int i = starting_index ; i < len; i++) {
         if (code[i] == terminator) {
             
-            char* built = malloc(i - index + 1);
-            memset(built, 0, i - index + 1);
+            int build_length = i - index + 1;
+            char* built = malloc(build_length);
+
+            memset(built, 0, build_length);
             memcpy(built, code+index, i - index);
+
+            built[build_length-1] = 0;
 
             if (size_to_skip != NULL) {
                 if (i + 1 < len) {
-                    *size_to_skip = (i - index) + 1;
+                    *size_to_skip = build_length;
                 } else {
                     *size_to_skip = 0;
                 }
@@ -269,6 +273,11 @@ int run_literal(em_state* state, const char* code, int index, int len) {
         case '1': 
         {
             char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+
+            if (test == NULL) {
+                em_panic(code, index, len, state, "Could not find a complete literal for byte: Did you forget to terminate it?");
+            }
+
             uint8_t v = atoi(test);
             free(test);
 
@@ -284,6 +293,11 @@ int run_literal(em_state* state, const char* code, int index, int len) {
         case '2': 
         {
             char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+
+            if (test == NULL) {
+                em_panic(code, index, len, state, "Could not find a complete literal for int16: Did you forget to terminate it?");
+            }
+
             uint16_t v = atoi(test);
             free(test);
 
@@ -299,6 +313,11 @@ int run_literal(em_state* state, const char* code, int index, int len) {
         case '4': 
         {
             char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+
+            if (test == NULL) {
+                em_panic(code, index, len, state, "Could not find a complete literal for int32: Did you forget to terminate it?");
+            }
+
             uint32_t v = atoi(test);
             free(test);
 
@@ -314,6 +333,11 @@ int run_literal(em_state* state, const char* code, int index, int len) {
         case '8': 
         {
             char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+
+            if (test == NULL) {
+                em_panic(code, index, len, state, "Could not find a complete literal for int64: Did you forget to terminate it?");
+            }
+
             uint64_t v = strtol(test, NULL, 10);
             free(test);
 
@@ -329,6 +353,11 @@ int run_literal(em_state* state, const char* code, int index, int len) {
         case 'f':  
         {
             char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+
+            if (test == NULL) {
+                em_panic(code, index, len, state, "Could not find a complete literal for float32: Did you forget to terminate it?");
+            }
+
             float v = strtod(test, NULL);
             free(test);
 
@@ -344,6 +373,11 @@ int run_literal(em_state* state, const char* code, int index, int len) {
         case 'd':  
         {
             char* test = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+
+            if (test == NULL) {
+                em_panic(code, index, len, state, "Could not find a complete literal for float64: Did you forget to terminate it?");
+            }
+
             double v = strtod(test, NULL);
             free(test);
 
@@ -439,6 +473,13 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
     for(int i = index; i >= precontext; i--) {
         if (code[i] == '\n') {
             precontext = i + 1;
+            break;
+        }
+    }
+
+    for(int i = index; i < lengthcontext; i++) {
+        if (code[i] == '\n') {
+            lengthcontext = i;
             break;
         }
     }

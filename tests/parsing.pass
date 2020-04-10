@@ -1,2 +1,5 @@
 # Values should be equivalent whether prefixed with spaces or not
-ml 4     1024 _  ml 41024_ md a
+ml 
+4 1024 _  
+4 1024_ 
+md a
