@@ -183,7 +183,7 @@ char safe_get(const char* code, int index, int len) {
 void log_verbose(const char* format, ...) {
     va_list argptr;
     va_start(argptr, format);
-    //vfprintf(stderr, format, argptr);
+   // vfprintf(stderr, format, argptr);
     va_end(argptr);
 }
 
@@ -214,7 +214,7 @@ char* alloc_until(const char* code, int index, int len, char terminator, bool ea
                 if (i + 1 < len) {
                     *size_to_skip = build_length;
                 } else {
-                    *size_to_skip = 0;
+                    *size_to_skip = -1;
                 }
             }
 
@@ -237,7 +237,20 @@ int run_udt(em_state* state, const char* code, int index, int len) {
     log_verbose("DEBUG VERBOSE\t\tLiteral start '%c'\n", current_code);
 
     switch(current_code) {
-        case 'd': break;
+        case 'd': 
+        {
+             char* name = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+
+            if (name == NULL) {
+                em_panic(code, index, len, state, "Could not find a complete name for type definition: Did you forget to terminate it?");
+            }
+        }
+        return size_to_skip;
+
+
+        default:
+            em_panic(code, index, len, state, "Unknown UDT instruction %c", current_code);
+            return 0;
     }
 
     return size_to_skip;
@@ -390,7 +403,20 @@ int run_literal(em_state* state, const char* code, int index, int len) {
         }
         return size_to_skip;
 
-        case 's': break;
+        case 's': 
+        {
+             char* text = alloc_until(code, index+1, len, '_', true, &size_to_skip);
+
+            if (text == NULL) {
+                em_panic(code, index, len, state, "Could not find a complete literal for string: Did you forget to terminate it?");
+            }
+
+
+
+            log_verbose("DEBUG VERBOSE\t\tPush string literal %s skip %d\n", text, size_to_skip);
+        }
+        return size_to_skip;
+
         case '*': break;
         case '^': break;
 
@@ -788,6 +814,10 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
         // right shift
         case '>': break;
 
+        default:
+            em_panic(code, index, len, state, "Unknown boolean instruction %c", current_code);
+            return 0;
+
     }
 
     return 0;
@@ -930,6 +960,8 @@ int run_memory(em_state* state, const char* code, int index, int len) {
 
 void run(const char* filename, const char* code, int len) {
 
+    bool premature_exit = false;
+
     em_state state;
     memset(&state, 0, sizeof(em_state));
     state.stack_size = 4096;
@@ -941,6 +973,10 @@ void run(const char* filename, const char* code, int len) {
     ESOMODE mode = EM_MEMORY;
 
     for (int i = 0; i < len; i++) {
+
+        if (premature_exit) {
+            break;
+        }
 
         if (code[i] == '#') {
             log_verbose("DEBUG VERBOSE\t\tTerminating at comment at index %d\n", i);
@@ -993,19 +1029,33 @@ void run(const char* filename, const char* code, int len) {
             break;
 
             default:
-            log_verbose("DEBUG VERBOSE MODE LOGIC\t\t%d\n", mode);
+            {
+                log_verbose("DEBUG VERBOSE MODE LOGIC\t\t%d\n", mode);
 
-            // Allow modes to eat text
-            switch(mode) {
-                case EM_MEMORY: i += run_memory(&state, code, i, len); break;
-                case EM_LITERAL: i += run_literal(&state, code, i, len); break;
-                case EM_STACK: i += run_stack(&state, code, i, len); break;
-                case EM_CC: break;
-                case EM_DEBUG: i += run_debug(&state, code, i, len); break;
-                case EM_BOOLEAN: i += run_boolean(&state, code, i, len); break;
-                case EM_UDT: i += run_udt(&state, code, i, len); break;
+                int skip = 0;
+
+                // Allow modes to eat text
+                switch(mode) {
+                    case EM_MEMORY: skip = run_memory(&state, code, i, len); break;
+                    case EM_LITERAL: skip = run_literal(&state, code, i, len); break;
+                    case EM_STACK: skip = run_stack(&state, code, i, len); break;
+                    case EM_CC: break;
+                    case EM_DEBUG: skip = run_debug(&state, code, i, len); break;
+                    case EM_BOOLEAN: skip = run_boolean(&state, code, i, len); break;
+                    case EM_UDT: skip = run_udt(&state, code, i, len); break;
+                }
+
+                log_verbose("DEBUG VERBOSE SKIP %d characters\t\t%d\n", skip);
+
+                if (skip >= 0) {
+                    i += skip;
+                } else {
+                    log_verbose("EOF reached detected by skip of %d\n", skip);
+                    premature_exit = true;
+                }
+
+                break;
             }
-            break;
         }       
        
     }
