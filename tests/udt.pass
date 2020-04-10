@@ -1,13 +1,16 @@
 ml
 
-4;
 s id;
-
 4;
-s id2;
 
-s mytype;
-4 2;
+s id2;
+4;
+
+s name;
+s;
+
+	4 3;
+	s mytype;
 
 mu  d
 

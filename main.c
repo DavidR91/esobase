@@ -259,6 +259,22 @@ char* alloc_until(const char* code, int index, int len, char terminator, bool ea
     return NULL;
 }
 
+const char* code_colour_code(char code) {
+     switch(code) {
+        case '?': return "\033[0;36m"; 
+        case '1': return "\033[0;33m"; 
+        case '2': return "\033[0;32m"; 
+        case '4': return "\033[0;32m"; 
+        case '8': return "\033[0;32m"; 
+        case 'f': return "\033[0;35m"; 
+        case 'd': return "\033[0;35m"; 
+        case 's': return "\033[0;31m"; 
+        case '*': return "\033[0;31m"; 
+        case '^': return "\033[0;31m"; 
+    }
+
+    return "";
+}
 
 int run_udt(em_state* state, const char* code, int index, int len) {
    
@@ -270,15 +286,15 @@ int run_udt(em_state* state, const char* code, int index, int len) {
     switch(current_code) {
         case 'd': 
         {
-            em_stack_item* field_qty = stack_top(state);
-            em_stack_item* name = stack_top_minus(state, 1);
-
-            if (field_qty == NULL || field_qty->code != '4') {
-                em_panic(code, index, len, state, "Expected a 4 at stack top to define the quantity of fields for the type");
-            }
+            em_stack_item* name = stack_top(state);
+            em_stack_item* field_qty = stack_top_minus(state, 1);
 
             if (name == NULL || name->code != 's') {
-                em_panic(code, index, len, state, "Expected an s at stack top - 1 to define the name of the type");
+                em_panic(code, index, len, state, "Expected an s at stack top to define the name of the type");
+            }  
+
+            if (field_qty == NULL || field_qty->code != '4') {
+                em_panic(code, index, len, state, "Expected a 4 at stack top - 1 to define the quantity of fields for the type");
             }
 
             if (field_qty->u.v_int32 <= 0) {
@@ -293,7 +309,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             memset(new_type->types, 0, field_qty->u.v_int32 + 1);
 
             // We need a TYPE and NAME for each field
-            int minus = 2;
+            int minus = 1 + (field_qty->u.v_int32 * 2);
 
             // Where we write the type code per field
             int type_code_ptr = 0;
@@ -309,7 +325,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 }
 
                 field_names_length += field_name->size; // size inc NUL gives us space for a seprator
-                minus++;
+                minus--;
 
                 em_stack_item* field_type = stack_top_minus(state, minus);
 
@@ -319,7 +335,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
 
                 new_type->types[type_code_ptr] = field_type->code;
                 type_code_ptr++;
-                minus++;
+                minus--;
             }
 
             // Calculate total size 
@@ -522,26 +538,12 @@ int run_literal(em_state* state, const char* code, int index, int len) {
     return 0;
 }
 
-void dump_stack_item(em_stack_item* item) {
+void dump_stack_item(em_stack_item* item, int top_index) {
 
-    const char* type_colour;
+    const char* type_colour = code_colour_code(item->code);
     const char* reset_colour = "\033[0m";
 
-    switch(item->code) {
-        case '?': type_colour = "\033[0;36m"; break;
-        case '1': type_colour = "\033[0;33m"; break;
-        case '2': type_colour = "\033[0;32m"; break;
-        case '4': type_colour = "\033[0;32m"; break;
-        case '8': type_colour = "\033[0;32m"; break;
-        case 'f': type_colour = "\033[0;35m"; break;
-        case 'd': type_colour = "\033[0;35m"; break;
-        case 's': type_colour = "\033[0;31m"; break;
-        case '*': type_colour = "\033[0;31m"; break;
-        case '^': type_colour = "\033[0;31m"; break;
-        
-    }
-
-    fprintf(stdout, "%s %c %s", type_colour, item->code, reset_colour);
+    fprintf(stdout, "[%d]\t%s %c %s", top_index, type_colour, item->code, reset_colour);
 
     fprintf(stdout, "\t=\t%s", type_colour);
 
@@ -570,7 +572,7 @@ void dump_stack_item(em_stack_item* item) {
 void dump_stack(em_state* state) {
     fprintf(stdout, "=== Bottom of stack ===\n");
     for (int i = 0; i <= state->stack_ptr; i++) {
-        dump_stack_item(&state->stack[i]);
+        dump_stack_item(&state->stack[i], i - state->stack_ptr);
     }
     fprintf(stdout, "=== Top of stack ===\n");
 }
@@ -580,7 +582,12 @@ void dump_types(em_state* state) {
 
         em_type_definition* type = &state->types[i];
         printf("%s (%db in size)\n", type->name, type->size);
-        printf("%s\n", type->types);
+
+        for(int t = 0; t < strlen(type->types); t++) {
+            printf("%s%c", code_colour_code(type->types[t]), type->types[t]);
+        }
+
+        printf("\033[0m\n");
     }
 }
 
