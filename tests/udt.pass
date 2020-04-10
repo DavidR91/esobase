@@ -9,12 +9,25 @@ s id2;
 s name;
 s;
 
-	4 3;
+s ready;
+?;
+
+	4 4;
 	s mytype;
 
-mu  d
-
 md s 
+
+mu  
+d
+c mytype;
+
+g ready;
+
+ms p mu
+
+g id;
+
+md
 u
 
 md s
