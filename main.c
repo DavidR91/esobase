@@ -1,7 +1,8 @@
 // TODO
+// Control flow breaks line number (loops)
+// Control flow should not seek to comments or the same symbol when set
 // Padding for UDTs so they are compatible with C
 // String tables
-// if and loops
 // callable functions (?)
 
 #include <stdlib.h>
@@ -83,6 +84,7 @@ void run(const char* filename, const char* code, int len) {
     state.filename = filename;
     memset(state.stack, 0, sizeof(em_stack_item) * state.stack_size);
 
+    state.control_flow_token = '@';
     state.type_ptr = -1;
     state.max_types = 255;
     state.types = malloc(sizeof(em_type_definition) * state.max_types);

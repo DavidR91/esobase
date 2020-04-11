@@ -52,9 +52,11 @@ typedef struct {
     int file_line;
     const char* filename;
     bool control_flow_if_flag;
+    uint8_t control_flow_token;
 
 } em_state;
 
 void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...);
 size_t code_sizeof(char code);
+bool is_code_numeric(char code);
 char safe_get(const char* code, int index, int len);

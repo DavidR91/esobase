@@ -48,3 +48,14 @@ char safe_get(const char* code, int index, int len) {
     return code[index];
 }
 
+bool is_code_numeric(char code) {
+    switch(code) {
+        case '1':
+        case '2':
+        case '4':
+        case '8':
+            return true;
+    }
+
+    return false;
+}

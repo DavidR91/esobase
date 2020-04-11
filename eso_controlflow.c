@@ -14,18 +14,27 @@
 
 int run_control(em_state* state, const char* code, int index, int len) {
 
+    char current_code = code[index];
+
     // The * marker has no meaning on its own so skip it
-    if (code[index] == '@') {
+    if (current_code == state->control_flow_token) {
         return index;
     }
 
-    switch(code[index]) {
+    switch(current_code) {
         case 'i':
         {
             // Toggle 'if' mode on/off
             state->control_flow_if_flag = !state->control_flow_if_flag;
         }
         break;
+
+        case 's': 
+        {
+            // Set the control flow symbol
+            state->control_flow_token = safe_get(code, index+1, len);
+        }
+        return index+1;
 
         case '<': 
         {
@@ -51,7 +60,7 @@ int run_control(em_state* state, const char* code, int index, int len) {
 
             // Go backwards
             for (int i = index; i >= 0; i--) {
-                if (code[i] == '@') {
+                if (code[i] == state->control_flow_token) {
                     return i;
                 }
             }
@@ -78,15 +87,20 @@ int run_control(em_state* state, const char* code, int index, int len) {
 
                 stack_pop(state);
             }
-            
+
             // Go forwards
             for (int i = index; i < len; i++) {
-                if (code[i] == '@') {
+                if (code[i] == state->control_flow_token) {
                     return i;
                 }
             }
         }
         break;
+
+        default:
+            em_panic(code, index, len, state, "Unknown control flow instruction %c", current_code);
+            return 0;
+
     }
 
     return index;

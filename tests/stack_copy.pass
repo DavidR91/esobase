@@ -1,0 +1,22 @@
+ml
+
+4 8;
+4 32;
+
+4 2;   # We want to copy -2
+ms c
+
+# Should have 8 at stack top
+ml 
+4 8;
+md a
+s
+
+# Should have 32 sandwiched underneath
+ml
+4 1;  # (so copy -1)
+ms c
+
+ml 
+4 32;
+md a

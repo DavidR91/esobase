@@ -103,6 +103,47 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             memcpy(&state->stack[ptr], dup, sizeof(em_stack_item));
         }
         break;
+
+        // Create a copy of an item at a specific top minus position
+        case 'c': 
+        {
+            // We need an offset at the top of the stack
+            em_stack_item* offset = stack_top(state);
+
+            if (offset == NULL) {
+                em_panic(code, index, len, state, "Cannot copy stack item: Need offset value at stack top");
+            }
+
+            if (!is_code_numeric(offset->code)) {
+                em_panic(code, index, len, state, "Cannot copy stack item: Offset at stack top must be of numeric type");
+            }
+
+            uint32_t minus = 0; // Ignore the offset itself
+
+            switch(offset->code) {
+                case '1': minus += offset->u.v_byte; break;
+                case '2': minus += offset->u.v_int16; break;
+                case '4': minus += offset->u.v_int32; break;
+                case '8': minus += offset->u.v_int64; break;
+                default: 
+                    em_panic(code, index, len, state, "Unhandled type %c in determining stack copy offset", offset->code);
+                break;
+            }
+
+            // Now actually try to get the item to copy
+            em_stack_item* to_copy = stack_top_minus(state, minus);
+
+            if (to_copy == NULL) {
+                em_panic(code, index, len, state, "Cannot copy stack item: Stack tells us to retrieve item at -%d to copy but no such item exists", minus);
+            }
+
+            // Pop the offset info
+            stack_pop(state);
+
+            int ptr = stack_push(state);
+            memcpy(&state->stack[ptr], to_copy, sizeof(em_stack_item));
+        }
+        break;
     }
 
     return 0;

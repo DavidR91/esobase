@@ -1,7 +1,7 @@
 ml
 4 2;
 
-mf 
+mf
 @
     ml
     4 2;
@@ -24,9 +24,7 @@ mf
 mf 
 <
 
-
 @
-
 # We should have 12
 ml 4 12;
 md a
