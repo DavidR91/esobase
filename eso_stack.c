@@ -89,6 +89,20 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             }
 
             return 0;
+
+        // Duplicate top of stack
+        case 'd':
+        {
+            em_stack_item* dup = stack_top(state);
+
+            if (dup == NULL) {
+                em_panic(code, index, len, state, "Cannot duplicate stack top: stack is empty");
+            }
+
+            int ptr = stack_push(state);
+            memcpy(&state->stack[ptr], dup, sizeof(em_stack_item));
+        }
+        break;
     }
 
     return 0;

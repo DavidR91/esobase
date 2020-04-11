@@ -10,7 +10,8 @@ typedef enum {
     EM_STACK,
     EM_CC,
     EM_DEBUG,
-    EM_UDT
+    EM_UDT,
+    EM_CONTROL_FLOW
 
 } ESOMODE;
 
@@ -50,6 +51,7 @@ typedef struct {
     bool signed_flag;
     int file_line;
     const char* filename;
+    bool control_flow_if_flag;
 
 } em_state;
 

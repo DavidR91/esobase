@@ -1,29 +1,29 @@
 ml
 
 ############
-	s test_boolean;
-	?n
+    s test_boolean;
+    ?n
 
-	s test_byte;
-	1;
+    s test_byte;
+    1;
 
-	s test_int16;
-	2;
+    s test_int16;
+    2;
 
-	s test_int32;
-	4;
+    s test_int32;
+    4;
 
-	s test_int64;
-	8;
+    s test_int64;
+    8;
 
-	s test_float32;
-	f;
+    s test_float32;
+    f;
 
-	s test_float64;
-	d;
+    s test_float64;
+    d;
 
-	s test_string;
-	s;
+    s test_string;
+    s;
 
 ############
 

@@ -1,8 +1,8 @@
 // TODO
+// Padding for UDTs so they are compatible with C
 // String tables
 // if and loops
 // callable functions (?)
-// user defined types
 
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <stdarg.h> 
 #include <stdbool.h>
+#include <time.h>
 
 #include "eso_vm.h"
 #include "eso_udt.h"
@@ -21,11 +22,14 @@
 #include "eso_boolean.h"
 #include "eso_memory.h"
 #include "eso_debug.h"
+#include "eso_controlflow.h"
 
 void run_file(const char* file);
 void run(const char* filename, const char* i, int len);
 
 int main(int argc, char** argv) {
+
+    time(NULL);
 
     if (argc < 2) {
         fprintf(stderr, "At least one argument required\n");
@@ -131,6 +135,7 @@ void run(const char* filename, const char* code, int len) {
                     case 'c': mode = EM_CC; break;
                     case 'd': mode = EM_DEBUG; break;
                     case 'u': mode = EM_UDT; break;
+                    case 'f': mode = EM_CONTROL_FLOW; break;
                 default:
                     em_panic(code, i, len, &state, "Unknown mode change '%c'\n", new_mode);
                 }
@@ -157,6 +162,12 @@ void run(const char* filename, const char* code, int len) {
                     case EM_DEBUG: skip = run_debug(&state, code, i, len); break;
                     case EM_BOOLEAN: skip = run_boolean(&state, code, i, len); break;
                     case EM_UDT: skip = run_udt(&state, code, i, len); break;
+
+                    // Unlike other modes control flow directly sets where
+                    // we resume from
+                    case EM_CONTROL_FLOW: 
+                        i = run_control(&state, code, i, len);
+                        continue;
                 }
 
                 log_verbose("DEBUG VERBOSE SKIP %d characters\n", skip);
