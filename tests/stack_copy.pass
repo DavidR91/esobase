@@ -1,3 +1,6 @@
+#
+# Copy
+#
 ml
 
 4 8;
@@ -20,3 +23,24 @@ ms c
 ml 
 4 32;
 md a
+
+ms pp
+
+#
+# Duplicate
+#
+ml 
+4 22;    
+ms ddd  # We should now have 4x '22' so we can assert twice
+
+ml
+4 23;
+ms ddd  # and 4x '23' so we can assert twice more
+
+md
+
+# 4x asserts of matching pairs
+a
+a
+a
+a
