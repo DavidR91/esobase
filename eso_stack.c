@@ -16,17 +16,15 @@ int stack_push(em_state* state) {
     return state->stack_ptr;
 }
 
-em_stack_item* stack_pop(em_state* state, bool allow_managed_free) {
+em_stack_item* stack_pop(em_state* state) {
     if (state->stack_ptr < 0) {
         return NULL;
     } else {
         em_stack_item* top = &state->stack[state->stack_ptr];
 
-        if (allow_managed_free && 
-            is_coding_using_managed_memory(top->code) && 
-            top->u.v_mptr->free_on_stack_pop) {
+        if (is_code_using_managed_memory(top->code)) {
 
-            log_verbose("Stack pop %d is \033[0;31mfreeing managed memory\033[0;0m\n", state->stack_ptr);
+            log_verbose("Stack pop %d is \033[0;31mremoving reference to managed memory\033[0;0m\n", state->stack_ptr);
         
             free_managed_ptr("(Source not available)", 0, 22, state, top->u.v_mptr);
         }
@@ -83,7 +81,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
         case 'p':         
             log_verbose("Stack pop\n");
             
-            if (stack_pop(state, true) == NULL) {
+            if (stack_pop(state) == NULL) {
                 em_panic(code, index, len, state, "Cannot pop from stack: stack is empty");
             }
 
@@ -137,7 +135,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             }
 
             // Pop the offset info
-            stack_pop(state, true);
+            stack_pop(state);
 
             int ptr = stack_push(state);
             memcpy(&state->stack[ptr], to_copy, sizeof(em_stack_item));

@@ -53,7 +53,7 @@ size_t code_sizeof(char code) {
         case '8': return sizeof(uint64_t); break;
         case 'f': return sizeof(float); break;
         case 'd': return sizeof(double); break;
-        case 's': return sizeof(char*); break;
+        case 's': return sizeof(em_managed_ptr*); break;
         case '*': return sizeof(void*); break;
         case '^': return sizeof(void*); break;
     }
@@ -81,7 +81,7 @@ bool is_code_numeric(char code) {
     return false;
 }
 
-bool is_coding_using_managed_memory(char code) {
+bool is_code_using_managed_memory(char code) {
     switch(code) {
         case 'u':
         case 's':
@@ -110,9 +110,37 @@ void free_managed_ptr(const char* code, int index, int len, em_state* state, em_
         em_panic(code, index, len, state, "Attempting to free allocation of zero size: Unlikely to be legitimate allocation");
     }
 
-    log_verbose("Freeing %db of memory @ %p\n", mptr->size, mptr->raw);
+    mptr->references--;
+    log_verbose("Freeing %p now at %d references\n", mptr->raw, mptr->references);
 
-    em_usercode_free(mptr->raw, mptr->size);
-    memset(mptr, 0, sizeof(em_managed_ptr));
-    mptr->dead = true;
+    if (mptr->references <= 0) {
+
+        // If we're actually a reference of something else, then free that
+        if (mptr->reference_of != NULL) {
+            log_verbose("Freeing %p (reference)\n", mptr->reference_of);
+            free_managed_ptr(code, index, len, state, mptr->reference_of);
+        } else { 
+            log_verbose("Freeing %db of memory @ %p\n", mptr->size, mptr->raw);
+
+            if (mptr->concrete_type != NULL) {
+                log_verbose("Need to free fields of concrete type %s\n", mptr->concrete_type->name);
+
+                int field_bytes_start = 0;
+
+                for(int field = 0; field < strlen(mptr->concrete_type->types); field++) {
+
+                    if (is_code_using_managed_memory(mptr->concrete_type->types[field])) {
+                        log_verbose("Freeing field %s of %s\n", mptr->concrete_type->field_names[field], mptr->concrete_type->name);
+                        free_managed_ptr(code, index, len, state, *(em_managed_ptr**)(mptr->raw + field_bytes_start));
+                    }
+
+                    field_bytes_start += code_sizeof(mptr->concrete_type->types[field]);
+                }
+            }
+
+            em_usercode_free(mptr->raw, mptr->size);
+        }
+
+        memset(mptr, 0, sizeof(em_managed_ptr));       
+    }
 }

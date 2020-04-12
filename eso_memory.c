@@ -45,10 +45,10 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             em_managed_ptr* mptr = create_managed_ptr(state);
             mptr->size = real_size;
             mptr->raw = arb;
-            mptr->free_on_stack_pop = true; // who knows right now
             mptr->concrete_type = NULL;
+            mptr->references++; // Stack holds reference
 
-            stack_pop(state, true);
+            stack_pop(state);
 
             int ptr = stack_push(state);
             state->stack[ptr].code = '*';
@@ -56,24 +56,6 @@ int run_memory(em_state* state, const char* code, int index, int len) {
 
             log_verbose("Allocated %db of memory @ %p\n", real_size, arb);
 
-            return 0;
-        }
-
-        // free
-        case 'f': 
-        {
-            // We need a MANAGED pointer on top of the stack
-            em_stack_item* top = stack_top(state);
-
-            if (top == NULL) {
-                em_panic(code, index, len, state, "Insufficient arguments to memory free: requires pointer on stack top");
-            }
-
-            if (top->code != '*') {
-                em_panic(code, index, len, state, "Memory free requires pointer top of stack - found %c\n", top->code);            
-            }
-
-            stack_pop(state, true);
             return 0;
         }
 

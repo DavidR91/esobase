@@ -6,7 +6,8 @@ a
 
 md sp
 
-mm
-f
+ms
+p # stack holds only reference
 
 md sp
+

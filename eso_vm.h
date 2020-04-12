@@ -25,9 +25,9 @@ typedef struct {
 typedef struct {
     void* raw;
     uint32_t size;
-    bool free_on_stack_pop;
+    uint16_t references; // strong references
+    void* reference_of;
     em_type_definition* concrete_type;
-    bool dead;
 } em_managed_ptr;
 
 typedef struct {
@@ -66,7 +66,7 @@ typedef struct {
 void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...);
 size_t code_sizeof(char code);
 bool is_code_numeric(char code);
-bool is_coding_using_managed_memory(char code);
+bool is_code_using_managed_memory(char code);
 char safe_get(const char* code, int index, int len);
 
 em_type_definition* create_new_type(em_state* state);

@@ -48,9 +48,9 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             em_managed_ptr* mptr = create_managed_ptr(state);
             mptr->size = definition->size;
             mptr->raw = em_usercode_alloc(mptr->size);
-            mptr->free_on_stack_pop = true;
             memset(mptr->raw, 0, mptr->size);
             mptr->concrete_type = definition;
+            mptr->references++; // Stack holds reference
 
             int top = stack_push(state);
             state->stack[top].code = 'u';
@@ -153,26 +153,17 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 break;
                 case 's': 
                 {
-                    em_managed_ptr* mptr = create_managed_ptr(state);
-                    mptr->free_on_stack_pop = true; // Guessing right now
+                    em_managed_ptr* inside_type = *(em_managed_ptr**)(of_type->u.v_mptr->raw + field_bytes_start);
 
-                    // Remember: The size of the type HOLDING the string we're going to copy
-                    // has no relation to the length or size of the string we're copying
+                    if (inside_type == NULL) {
+                        em_panic(code, index, len, state, "Attempt to get uninitialized string field %s", name);
+                    }
 
-                    // This sucks
-                    size_t string_length = strlen((*(const char**)(of_type->u.v_mptr->raw + field_bytes_start)));
-
-                    // Effectively duplicating the content we're referencing
-                    mptr->size = string_length + 1; // NUL
-                    mptr->raw = em_usercode_alloc(mptr->size);
-                    memcpy(mptr->raw, *(const char**)(of_type->u.v_mptr->raw + field_bytes_start), mptr->size);
-                    mptr->concrete_type = NULL; // It's a string so no concrete
+                    inside_type->references++;
 
                     int top = stack_push(state);
-                    state->stack[top].u.v_mptr = mptr;
+                    state->stack[top].u.v_mptr = inside_type;
                     state->stack[top].code = field_code;
-
-                    log_verbose("UDT field set created %db managed memory for string \"%s\"\n", mptr->size, mptr->raw);
                 }
                 break;
                 default:
@@ -252,21 +243,27 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case 'd':  
                 *(double*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_double;
                 break;
+
                 case 's':
+                {
+                    em_managed_ptr** field_value = (em_managed_ptr**)(of_type->u.v_mptr->raw + field_bytes_start);
 
+                    // If the field has a value, drop its references
+                    if (*field_value != NULL) {
+                        free_managed_ptr(code, index, len, state, *field_value);
+                    }
 
-                // HOW DO WE DELETE STRING POINTERS INSIDE OF UDTS
-                // ON POP?
-
-
-                *(const char**)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_mptr->raw;
+                    top->u.v_mptr->references++;
+                    *field_value = top->u.v_mptr;
+                }
                 break;
+
                 default: 
                 em_panic(code, index, len, state, "Setting field %s of type %c not currently supported", name, field_code);
                 break;
             }
 
-            stack_pop(state, true);
+            stack_pop(state);
 
         }
         return size_to_skip;
@@ -342,7 +339,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             }
 
             for(int q = 1; q <= 2 + (field_qty->u.v_int32 * 2); q++) {
-                stack_pop(state, true);
+                stack_pop(state);
             }
         }
         return size_to_skip;

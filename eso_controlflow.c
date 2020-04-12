@@ -52,11 +52,11 @@ int run_control(em_state* state, const char* code, int index, int len) {
                 }
 
                 if (!condition->u.v_bool) {
-                    stack_pop(state, true);
+                    stack_pop(state);
                     break;
                 }
 
-                stack_pop(state, true);
+                stack_pop(state);
             }
 
             // Go backwards
@@ -82,11 +82,11 @@ int run_control(em_state* state, const char* code, int index, int len) {
                 }
 
                 if (!condition->u.v_bool) {
-                    stack_pop(state, true);
+                    stack_pop(state);
                     break;
                 }
 
-                stack_pop(state, true);
+                stack_pop(state);
             }
 
             // Go forwards

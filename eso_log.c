@@ -7,7 +7,7 @@
 void log_verbose(const char* format, ...) {
     va_list argptr;
     va_start(argptr, format);
-    fprintf(stderr, "[VRB] ");
-   	vfprintf(stderr, format, argptr);
+    // fprintf(stderr, "[VRB] ");
+   	// vfprintf(stderr, format, argptr);
     va_end(argptr);
 }

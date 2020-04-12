@@ -15,7 +15,7 @@ int run_debug(em_state* state, const char* code, int index, int len) {
     char current_code = tolower(code[index]);
 
     log_verbose("\033[0;31m%c\033[0;0m (Debug)\n", current_code);
-    
+
     switch(current_code) {
 
         // Stack
@@ -54,8 +54,8 @@ int run_debug(em_state* state, const char* code, int index, int len) {
                 }
             }
 
-            stack_pop(state, true);
-            stack_pop(state, true);
+            stack_pop(state);
+            stack_pop(state);
             
             log_verbose("Assertion successful\n");
         }
@@ -92,15 +92,15 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
         case '8': fprintf(stdout, "%llu", item->u.v_int64);break;
         case 'f': fprintf(stdout, "%f", item->u.v_float);break;
         case 'd': fprintf(stdout, "%f", item->u.v_double);break;
-        case 's': fprintf(stdout, "\"%s\\0\" %p length %d", item->u.v_mptr->raw, item->u.v_mptr->raw, item->u.v_mptr->size);break;
-        case '*': fprintf(stdout, "%p length %d", item->u.v_mptr->raw, item->u.v_mptr->size); break;
+        case 's': fprintf(stdout, "\"%s\\0\" %p length %d refcount %d", item->u.v_mptr->raw, item->u.v_mptr->raw, item->u.v_mptr->size, item->u.v_mptr->references);break;
+        case '*': fprintf(stdout, "%p length %d refcount %d", item->u.v_mptr->raw, item->u.v_mptr->size, item->u.v_mptr->references); break;
         case '^': break;
         case 'u': 
         {
             // Find relevant type
             em_type_definition* type = item->u.v_mptr->concrete_type;
 
-            fprintf(stdout, "%s (%db)", type->name, item->u.v_mptr->size);
+            fprintf(stdout, "%s (%db) references %d", type->name, item->u.v_mptr->size, item->u.v_mptr->references);
         }
         break;
     }
@@ -113,16 +113,16 @@ void dump_pointers(em_state* state) {
     for(int i = 0; i <= state->pointer_ptr; i++) {
         em_managed_ptr* ptr = &state->pointers[i];
 
-        if (ptr->dead)
+        if (ptr->references <= 0)
         {
-            printf("%2d) *** DEAD *** \n", i);
+            printf("%2d) %p *** DEAD *** \n", i, ptr);
         }
         else {
-            printf("%2d) Alive \n", i);
+            printf("%2d) %p Alive (%d references)\n", i, ptr, ptr->references);
         }
 
         printf("\traw = %p size = %db\n", ptr->raw, ptr->size);
-        printf("\tfree on pop = %d type = %p\n", ptr->free_on_stack_pop, ptr->concrete_type);
+        printf("\ttype = %p is reference of = %p\n", ptr->concrete_type, ptr->reference_of);
 
         if (ptr->concrete_type != NULL) {
             printf("\t\033[0;96m%s (%s)\033[0m size = %db\n", ptr->concrete_type->name, ptr->concrete_type->types, ptr->concrete_type->size);

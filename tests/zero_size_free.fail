@@ -1,2 +1,4 @@
 # Zero size free
-ml 10; mm a f
+ml 10; 
+mm a 
+ms p

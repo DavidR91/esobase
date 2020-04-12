@@ -14,7 +14,7 @@
 int run_boolean(em_state* state, const char* code, int index, int len) {
 
     char current_code = tolower(code[index]);
-    
+
     log_verbose("\033[0;31m%c\033[0;0m (Boolean)\n", current_code);
 
     switch(current_code) {
@@ -33,8 +33,8 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                     "Operation add requires two arguments of numeric type. Got %c and %c", one->code, two->code);
             }
 
-            stack_pop(state, true);
-            stack_pop(state, true);
+            stack_pop(state);
+            stack_pop(state);
 
             switch(one->code) {
                 case '1': 
@@ -146,8 +146,8 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                     "Operation and requires two arguments of ? (boolean) type. Got %c and %c", one->code, two->code);
             }
 
-            stack_pop(state, true);
-            stack_pop(state, true);
+            stack_pop(state);
+            stack_pop(state);
 
             bool op = one->u.v_bool && two->u.v_bool;
 
@@ -172,8 +172,8 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                     "Operation or requires two arguments of ? (boolean) type. Got %c and %c", one->code, two->code);
             }
 
-            stack_pop(state, true);
-            stack_pop(state, true);
+            stack_pop(state);
+            stack_pop(state);
 
             bool op = one->u.v_bool || two->u.v_bool;
 
@@ -197,7 +197,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                     "Operation not requires one argument of ? (boolean) type. Got %c", one->code);
             }
 
-            stack_pop(state, true);
+            stack_pop(state);
 
             bool op = !one->u.v_bool;
 
@@ -240,8 +240,8 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                     "Operation less than requires two arguments of numeric type. Got %c and %c", one->code, two->code);
             }
 
-            stack_pop(state, true);
-            stack_pop(state, true);
+            stack_pop(state);
+            stack_pop(state);
 
             switch(one->code) {
                 case '1': 
@@ -352,8 +352,8 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                     "Operation greater than requires two arguments of numeric type. Got %c and %c", one->code, two->code);
             }
 
-            stack_pop(state, true);
-            stack_pop(state, true);
+            stack_pop(state);
+            stack_pop(state);
 
             switch(one->code) {
                 case '1': 

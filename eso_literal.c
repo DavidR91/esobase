@@ -147,8 +147,6 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case 's': 
         {
-            // Just leaking this right now, need a string table
-            //
             char* text = alloc_until(code, index+1, len, ';', true, &size_to_skip);
 
             if (text == NULL) {
@@ -158,8 +156,8 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             em_managed_ptr* mptr = create_managed_ptr(state);
             mptr->raw = text;
             mptr->size = strlen(text) + 1; //alloc until is always NUL terminated
-            mptr->free_on_stack_pop = true;
             mptr->concrete_type = NULL;
+            mptr->references++; // Stack holds a reference
 
             log_verbose("String push created %db managed memory for value \"%s\"\n", mptr->size, mptr->raw);
 
