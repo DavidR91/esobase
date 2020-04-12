@@ -12,33 +12,32 @@
 int stack_push(em_state* state) {
     state->stack_ptr++;
     memset(&state->stack[state->stack_ptr], 0, sizeof(em_stack_item));
+    log_verbose("Stack push result index = %d\n", state->stack_ptr);
     return state->stack_ptr;
 }
 
-em_stack_item* stack_pop(em_state* state) {
+em_stack_item* stack_pop(em_state* state, bool allow_managed_free) {
     if (state->stack_ptr < 0) {
         return NULL;
     } else {
         em_stack_item* top = &state->stack[state->stack_ptr];
+
+        if (allow_managed_free && 
+            is_coding_using_managed_memory(top->code) && 
+            top->u.v_mptr->free_on_stack_pop) {
+
+            log_verbose("Stack pop %d is \033[0;31mfreeing managed memory\033[0;0m\n", state->stack_ptr);
+        
+            free_managed_ptr("(Source not available)", 0, 22, state, top->u.v_mptr);
+        }
 
         state->stack_ptr--;
 
+        log_verbose("Stack pop result index = %d\n", state->stack_ptr);
+        
         return top;
     }
 }
-
-em_stack_item* stack_pop_by(em_state* state, int amount) {
-    if (state->stack_ptr < 0) {
-        return NULL;
-    } else {
-        em_stack_item* top = &state->stack[state->stack_ptr];
-
-        state->stack_ptr -= amount;
-
-        return top;
-    }
-}
-
 
 em_stack_item* stack_top_minus(em_state* state, int minus) {
     if (state->stack_ptr - minus < 0) {
@@ -76,15 +75,15 @@ int run_stack(em_state* state, const char* code, int index, int len) {
 
     char current_code = tolower(code[index]);
 
-     log_verbose("DEBUG VERBOSE\t\tStack start '%c'\n", current_code);
+    log_verbose("\033[0;31m%c\033[0;0m (Stack)\n", current_code);
 
     switch(current_code) {
 
         // pop
         case 'p':         
-            log_verbose("DEBUG VERBOSE\t\tStack pop\n");
+            log_verbose("Stack pop\n");
             
-            if (stack_pop(state) == NULL) {
+            if (stack_pop(state, true) == NULL) {
                 em_panic(code, index, len, state, "Cannot pop from stack: stack is empty");
             }
 
@@ -138,7 +137,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             }
 
             // Pop the offset info
-            stack_pop(state);
+            stack_pop(state, true);
 
             int ptr = stack_push(state);
             memcpy(&state->stack[ptr], to_copy, sizeof(em_stack_item));

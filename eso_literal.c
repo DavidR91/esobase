@@ -15,7 +15,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
     int size_to_skip = 0;
 
     char current_code = tolower(code[index]);
-    log_verbose("DEBUG VERBOSE\t\tLiteral start '%c'\n", current_code);
+    log_verbose("\033[0;31m%c\033[0;0m (Literal)\n", current_code);
 
     switch(current_code) {
         case '?': 
@@ -27,7 +27,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             state->stack[top].u.v_bool = (v == 'y' || v == 't');
             state->stack[top].code = current_code;
 
-            log_verbose("DEBUG VERBOSE\t\tPush bool literal %c\n", v);
+            log_verbose("Push bool literal %c\n", v);
         }
         return 1;
 
@@ -40,13 +40,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             }
 
             uint8_t v = atoi(test);
-            free(test);
+            em_parser_free(test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
             state->stack[top].u.v_byte = v;
 
-            log_verbose("DEBUG VERBOSE\t\tPush u8 literal %d\n", v);
+            log_verbose("Push u8 literal %d\n", v);
         }
         return size_to_skip;
 
@@ -59,13 +59,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             }
 
             uint16_t v = atoi(test);
-            free(test);
+            em_parser_free(test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
             state->stack[top].u.v_int32 = v;
 
-            log_verbose("DEBUG VERBOSE\t\tPush u16 literal %d\n", v);
+            log_verbose("Push u16 literal %d\n", v);
         }
         return size_to_skip;
 
@@ -78,13 +78,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             }
 
             uint32_t v = atoi(test);
-            free(test);
+            em_parser_free(test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
             state->stack[top].u.v_int32 = v;
 
-            log_verbose("DEBUG VERBOSE\t\tPush u32 literal %d\n", v);
+            log_verbose("Push u32 literal %d\n", v);
         }
         return size_to_skip;
 
@@ -97,13 +97,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             }
 
             uint64_t v = strtol(test, NULL, 10);
-            free(test);
+            em_parser_free(test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
             state->stack[top].u.v_int64 = v;
 
-            log_verbose("DEBUG VERBOSE\t\tPush u64 literal %llu\n", v);
+            log_verbose("Push u64 literal %llu\n", v);
         }
         return size_to_skip;
 
@@ -116,13 +116,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             }
 
             float v = strtod(test, NULL);
-            free(test);
+            em_parser_free(test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
             state->stack[top].u.v_float = v;
 
-            log_verbose("DEBUG VERBOSE\t\tPush float literal %f\n", v);
+            log_verbose("Push float literal %f\n", v);
         }
         return size_to_skip;
 
@@ -135,13 +135,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             }
 
             double v = strtod(test, NULL);
-            free(test);
+            em_parser_free(test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
             state->stack[top].u.v_double = v;
 
-            log_verbose("DEBUG VERBOSE\t\tPush double literal %f\n", v);
+            log_verbose("Push double literal %f\n", v);
         }
         return size_to_skip;
 
@@ -161,11 +161,13 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             mptr->free_on_stack_pop = true;
             mptr->concrete_type = NULL;
 
+            log_verbose("String push created %db managed memory for value \"%s\"\n", mptr->size, mptr->raw);
+
             int top = stack_push(state);
             state->stack[top].code = current_code;
             state->stack[top].u.v_mptr = mptr; 
 
-            log_verbose("DEBUG VERBOSE\t\tPush string literal %s skip %d\n", text, size_to_skip);
+            log_verbose("Push string literal %s skip %d\n", text, size_to_skip);
         }
         return size_to_skip;
 

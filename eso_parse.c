@@ -5,6 +5,8 @@
 #include <stdarg.h> 
 #include <stdbool.h>
 
+#include "eso_vm.h"
+
 // Return everything in code until the specified terminator is hit.
 // The caller should resume from *resume in order to skip the eaten 
 // text and the terminator. NULL returned if terminator not found before
@@ -27,7 +29,7 @@ char* alloc_until(const char* code, int index, int len, char terminator, bool ea
         if (code[i] == terminator) {
             
             int build_length = bytes_consumed + 1;
-            char* built = malloc(build_length);
+            char* built = em_parser_alloc(build_length);
 
             memset(built, 0, build_length);
             memcpy(built, code+starting_index, i - starting_index);

@@ -111,7 +111,14 @@ md a
 ml s eggo world!;
 mu 
 s test_string;
+
+
+mds
+mu
 g test_string;
 
 ml s eggo world!;
 md psa
+
+ms p
+md p

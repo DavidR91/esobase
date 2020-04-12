@@ -59,7 +59,7 @@ void run_file(const char* file) {
 
     rewind(input);
 
-    char* file_content = malloc(length+1);
+    char* file_content = em_perma_alloc(length+1);
     memset(file_content, 0, length+1);
 
     if (fread(file_content, 1, length, input) != length) {
@@ -82,18 +82,18 @@ void run(const char* filename, const char* code, int len) {
     memset(&state, 0, sizeof(em_state));
     state.stack_size = 4096;
     state.stack_ptr = -1;
-    state.stack = malloc(sizeof(em_stack_item) * state.stack_size);
+    state.stack = em_perma_alloc(sizeof(em_stack_item) * state.stack_size);
     state.filename = filename;
     memset(state.stack, 0, sizeof(em_stack_item) * state.stack_size);
 
     state.control_flow_token = '@';
     state.type_ptr = -1;
     state.max_types = 255;
-    state.types = malloc(sizeof(em_type_definition) * state.max_types);
+    state.types = em_perma_alloc(sizeof(em_type_definition) * state.max_types);
     memset(state.types, 0, sizeof(em_type_definition) * state.max_types);
 
     state.max_pointers = 2048;
-    state.pointers = malloc(sizeof(em_managed_ptr) * state.max_pointers);
+    state.pointers = em_perma_alloc(sizeof(em_managed_ptr) * state.max_pointers);
     memset(state.pointers, 0, sizeof(em_managed_ptr) * state.max_pointers);
     state.pointer_ptr = -1;
 
@@ -106,7 +106,7 @@ void run(const char* filename, const char* code, int len) {
         }
 
         if (code[i] == '#') {
-            log_verbose("DEBUG VERBOSE\t\tTerminating at comment at index %d\n", i);
+            log_verbose("Terminating at comment at index %d\n", i);
 
             for(int current = i; current < len; current++) {
                 if (code[current] == '\n') {
@@ -126,8 +126,6 @@ void run(const char* filename, const char* code, int len) {
         if (isspace(code[i]) || code[i] == '\r') {
             continue;
         }
-
-        log_verbose("DEBUG VERBOSE\t\t%d = %c\n", i, code[i]);
 
         // 'Free letters' i.e. top level mode changes
         switch(tolower(code[i])) {
@@ -149,7 +147,7 @@ void run(const char* filename, const char* code, int len) {
                     em_panic(code, i, len, &state, "Unknown mode change '%c'\n", new_mode);
                 }
 
-                log_verbose("DEBUG VERBOSE\t\tMODE CHANGED TO %d\n", mode);
+                log_verbose("\033[0;31m%c %c\033[0;0m (Mode change)\n", code[i], new_mode);
 
                 i++;
                 continue;
@@ -157,9 +155,7 @@ void run(const char* filename, const char* code, int len) {
             break;
 
             default:
-            {
-                log_verbose("DEBUG VERBOSE MODE LOGIC\t\t%d\n", mode);
-
+            {               
                 int skip = 0;
 
                 // Allow modes to eat text
@@ -179,7 +175,7 @@ void run(const char* filename, const char* code, int len) {
                         continue;
                 }
 
-                log_verbose("DEBUG VERBOSE SKIP %d characters\n", skip);
+                log_verbose("Skipping %d characters\n", skip);
 
                 if (skip >= 0) {
                     i += skip;

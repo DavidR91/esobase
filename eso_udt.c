@@ -15,7 +15,8 @@ int run_udt(em_state* state, const char* code, int index, int len) {
     int size_to_skip = 0;
 
     char current_code = tolower(code[index]);
-    log_verbose("DEBUG VERBOSE\t\tLiteral start '%c'\n", current_code);
+
+    log_verbose("\033[0;31m%c\033[0;0m (UDT)\n", current_code);
 
     switch(current_code) {
 
@@ -39,14 +40,14 @@ int run_udt(em_state* state, const char* code, int index, int len) {
 
             if (definition == NULL) {
                 em_panic(code, index, len, state, "Could not find type '%s' to create", name);
-                free(name);
+                em_parser_free(name);
             }
 
-            free(name);
+            em_parser_free(name);
 
             em_managed_ptr* mptr = create_managed_ptr(state);
             mptr->size = definition->size;
-            mptr->raw = malloc(mptr->size);
+            mptr->raw = em_usercode_alloc(mptr->size);
             mptr->free_on_stack_pop = true;
             memset(mptr->raw, 0, mptr->size);
             mptr->concrete_type = definition;
@@ -54,6 +55,9 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             int top = stack_push(state);
             state->stack[top].code = 'u';
             state->stack[top].u.v_mptr = mptr;
+
+            log_verbose("UDT create created %db managed memory @ %p\n", mptr->size, mptr->raw);
+
         }
         break;
 
@@ -160,13 +164,15 @@ int run_udt(em_state* state, const char* code, int index, int len) {
 
                     // Effectively duplicating the content we're referencing
                     mptr->size = string_length + 1; // NUL
-                    mptr->raw = malloc(mptr->size);
+                    mptr->raw = em_usercode_alloc(mptr->size);
                     memcpy(mptr->raw, *(const char**)(of_type->u.v_mptr->raw + field_bytes_start), mptr->size);
                     mptr->concrete_type = NULL; // It's a string so no concrete
 
                     int top = stack_push(state);
                     state->stack[top].u.v_mptr = mptr;
                     state->stack[top].code = field_code;
+
+                    log_verbose("UDT field set created %db managed memory for string \"%s\"\n", mptr->size, mptr->raw);
                 }
                 break;
                 default:
@@ -247,6 +253,12 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 *(double*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_double;
                 break;
                 case 's':
+
+
+                // HOW DO WE DELETE STRING POINTERS INSIDE OF UDTS
+                // ON POP?
+
+
                 *(const char**)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_mptr->raw;
                 break;
                 default: 
@@ -254,7 +266,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 break;
             }
 
-            stack_pop(state);
+            stack_pop(state, true);
 
         }
         return size_to_skip;
@@ -277,12 +289,19 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 em_panic(code, index, len, state, "Not allowed to declare type %s with no fields", name->u.v_mptr->raw);
             }
 
+            // Currently assuming types live forever
+            //
             em_type_definition* new_type = create_new_type(state);
-            new_type->name = name->u.v_mptr->raw;
-            new_type->types = malloc(field_qty->u.v_int32 + 1);
+
+            // Create a copy of the name because we don't expect it to stick around
+            new_type->name = em_perma_alloc(name->u.v_mptr->size);
+            memset(new_type->name, 0, name->u.v_mptr->size);
+            memcpy(new_type->name, name->u.v_mptr->raw, name->u.v_mptr->size);
+
+            new_type->types = em_perma_alloc(field_qty->u.v_int32 + 1);
             memset(new_type->types, 0, field_qty->u.v_int32 + 1);
 
-            new_type->field_names = malloc(sizeof(char*) * field_qty->u.v_int32);
+            new_type->field_names = em_perma_alloc(sizeof(char*) * field_qty->u.v_int32);
             memset(new_type->field_names, 0, sizeof(char*) * field_qty->u.v_int32);
 
             // We need a TYPE and NAME for each field
@@ -298,13 +317,18 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                     em_panic(code, index, len, state, "Expected an s at stack top - %d to define the name of field %d of %s", minus, field, name->u.v_mptr->raw);
                 }
 
-                new_type->field_names[field-1] = field_name->u.v_mptr->raw;
+                // Create a copy of each field name so it can't disappear
+                char* field_name_copy = em_perma_alloc(field_name->u.v_mptr->size);
+                memset(field_name_copy, 0, field_name->u.v_mptr->size);
+                memcpy(field_name_copy, field_name->u.v_mptr->raw, field_name->u.v_mptr->size);
+
+                new_type->field_names[field-1] = field_name_copy;
                 minus--;
 
                 em_stack_item* field_type = stack_top_minus(state, minus);
 
                 if (field_qty == NULL) {
-                    em_panic(code, index, len, state, "Expected an item of any type at stack top - %d to define the type of field %d of %s", minus, field, name->u.v_mptr->raw);
+                    em_panic(code, index, len, state, "Expected an item of any type at stack top - %d to define the type of field %d of %s", minus, field, field_name_copy);
                 }
 
                 new_type->types[type_code_ptr] = field_type->code;
@@ -317,7 +341,9 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 new_type->size += code_sizeof(new_type->types[i]);
             }
 
-            stack_pop_by(state, 2 + (field_qty->u.v_int32 * 2));
+            for(int q = 1; q <= 2 + (field_qty->u.v_int32 * 2); q++) {
+                stack_pop(state, true);
+            }
         }
         return size_to_skip;
 

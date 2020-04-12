@@ -13,6 +13,9 @@
 int run_debug(em_state* state, const char* code, int index, int len) {
 
     char current_code = tolower(code[index]);
+
+    log_verbose("\033[0;31m%c\033[0;0m (Debug)\n", current_code);
+    
     switch(current_code) {
 
         // Stack
@@ -51,10 +54,10 @@ int run_debug(em_state* state, const char* code, int index, int len) {
                 }
             }
 
-            stack_pop(state);
-            stack_pop(state);
+            stack_pop(state, true);
+            stack_pop(state, true);
             
-            log_verbose("DEBUG VERBOSE\t\tAssertion successful\n");
+            log_verbose("Assertion successful\n");
         }
         break;
 

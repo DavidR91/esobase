@@ -14,7 +14,7 @@
 int run_memory(em_state* state, const char* code, int index, int len) {
 
     char current_code = tolower(code[index]);
-    log_verbose("DEBUG VERBOSE\t\tMemory start '%c'\n", current_code);
+    log_verbose("\033[0;31m%c\033[0;0m (Memory)\n", current_code);
 
     switch(current_code) {
 
@@ -38,7 +38,7 @@ int run_memory(em_state* state, const char* code, int index, int len) {
                 default: em_panic(code, index, len, state, "Memory allocation requires integer number on top of stack - found %c\n", top->code);
             }
 
-            void* arb = malloc(real_size);
+            void* arb = em_usercode_alloc(real_size);
             memset(arb, 0, real_size);
 
             // Create a managed pointer
@@ -48,13 +48,13 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             mptr->free_on_stack_pop = true; // who knows right now
             mptr->concrete_type = NULL;
 
-            stack_pop(state);
+            stack_pop(state, true);
 
             int ptr = stack_push(state);
             state->stack[ptr].code = '*';
             state->stack[ptr].u.v_mptr = mptr;
 
-            log_verbose("DEBUG VERBOSE\t\tAllocated %db of memory @ %p\n", real_size, arb);
+            log_verbose("Allocated %db of memory @ %p\n", real_size, arb);
 
             return 0;
         }
@@ -73,9 +73,7 @@ int run_memory(em_state* state, const char* code, int index, int len) {
                 em_panic(code, index, len, state, "Memory free requires pointer top of stack - found %c\n", top->code);            
             }
 
-            free_managed_ptr(code, index, len, state, top->u.v_mptr);
-
-            stack_pop(state);   
+            stack_pop(state, true);
             return 0;
         }
 

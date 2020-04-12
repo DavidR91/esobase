@@ -16,7 +16,7 @@ typedef enum {
 } ESOMODE;
 
 typedef struct {
-    const char* name;
+    char* name;
     char* types;
     char** field_names;
     int size; // total size in bytes of the fields inside
@@ -66,9 +66,21 @@ typedef struct {
 void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...);
 size_t code_sizeof(char code);
 bool is_code_numeric(char code);
+bool is_coding_using_managed_memory(char code);
 char safe_get(const char* code, int index, int len);
 
 em_type_definition* create_new_type(em_state* state);
 em_managed_ptr* create_managed_ptr(em_state* state);
 void free_managed_ptr(const char* code, int index, int len, em_state* state, em_managed_ptr* mptr);
+
+void* em_perma_alloc(size_t size);
+
+// Allocations that should not live forever that are temporary values
+// for parsing
+void* em_parser_alloc(size_t size);
+void em_parser_free(void* ptr);
+
+// Allocations that should NOT live forever
+void* em_usercode_alloc(size_t size);
+void em_usercode_free(void* ptr, size_t size);
 

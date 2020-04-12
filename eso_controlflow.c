@@ -15,6 +15,7 @@
 int run_control(em_state* state, const char* code, int index, int len) {
 
     char current_code = code[index];
+    log_verbose("\033[0;31m%c\033[0;0m (Control flow)\n", current_code);
 
     // The * marker has no meaning on its own so skip it
     if (current_code == state->control_flow_token) {
@@ -51,11 +52,11 @@ int run_control(em_state* state, const char* code, int index, int len) {
                 }
 
                 if (!condition->u.v_bool) {
-                    stack_pop(state);
+                    stack_pop(state, true);
                     break;
                 }
 
-                stack_pop(state);
+                stack_pop(state, true);
             }
 
             // Go backwards
@@ -81,11 +82,11 @@ int run_control(em_state* state, const char* code, int index, int len) {
                 }
 
                 if (!condition->u.v_bool) {
-                    stack_pop(state);
+                    stack_pop(state, true);
                     break;
                 }
 
-                stack_pop(state);
+                stack_pop(state, true);
             }
 
             // Go forwards
