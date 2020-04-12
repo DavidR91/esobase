@@ -18,15 +18,9 @@ int run_literal(em_state* state, const char* code, int index, int len) {
     log_verbose("DEBUG VERBOSE\t\tLiteral start '%c'\n", current_code);
 
     switch(current_code) {
-        case '+': 
-            state->signed_flag = !state->signed_flag;
-            log_verbose("DEBUG VERBOSE\t\tSigned flag now %d\n", state->signed_flag);
-            return 0;
-
         case '?': 
         {
             int top = stack_push(state);
-            state->stack[top].signage = false;
             
             char v = tolower(safe_get(code, index+1, len));
 
@@ -49,7 +43,6 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             free(test);
 
             int top = stack_push(state);
-            state->stack[top].signage = state->signed_flag;
             state->stack[top].code = current_code;
             state->stack[top].u.v_byte = v;
 
@@ -69,7 +62,6 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             free(test);
 
             int top = stack_push(state);
-            state->stack[top].signage = state->signed_flag;
             state->stack[top].code = current_code;
             state->stack[top].u.v_int32 = v;
 
@@ -89,7 +81,6 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             free(test);
 
             int top = stack_push(state);
-            state->stack[top].signage = state->signed_flag;
             state->stack[top].code = current_code;
             state->stack[top].u.v_int32 = v;
 
@@ -109,7 +100,6 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             free(test);
 
             int top = stack_push(state);
-            state->stack[top].signage = state->signed_flag;
             state->stack[top].code = current_code;
             state->stack[top].u.v_int64 = v;
 
@@ -129,7 +119,6 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             free(test);
 
             int top = stack_push(state);
-            state->stack[top].signage = state->signed_flag;
             state->stack[top].code = current_code;
             state->stack[top].u.v_float = v;
 
@@ -149,7 +138,6 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             free(test);
 
             int top = stack_push(state);
-            state->stack[top].signage = state->signed_flag;
             state->stack[top].code = current_code;
             state->stack[top].u.v_double = v;
 
@@ -168,7 +156,6 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             }
 
             int top = stack_push(state);
-            state->stack[top].signage = state->signed_flag;
             state->stack[top].code = current_code;
             state->stack[top].u.v_ptr = text; 
             state->stack[top].size = strlen(text) + 1; //alloc until is always NUL terminated

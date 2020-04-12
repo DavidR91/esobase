@@ -44,8 +44,6 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             stack_pop(state);
 
             int ptr = stack_push(state);
-
-            state->stack[ptr].signage = false;
             state->stack[ptr].code = '*';
             state->stack[ptr].u.v_ptr = arb;
             state->stack[ptr].size = real_size;

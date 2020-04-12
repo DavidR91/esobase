@@ -48,7 +48,6 @@ typedef struct {
     int stack_ptr;
     int stack_size;
     int last_mode_change;
-    bool signed_flag;
     int file_line;
     const char* filename;
     bool control_flow_if_flag;

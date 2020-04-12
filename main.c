@@ -3,7 +3,9 @@
 // Control flow should not seek to comments or the same symbol when set
 // Padding for UDTs so they are compatible with C
 // String tables
+// Not leaking everywhere
 // callable functions (?)
+// Signed is broken (unsigned everywhere)
 
 #include <stdlib.h>
 #include <string.h>

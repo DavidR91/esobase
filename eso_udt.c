@@ -42,7 +42,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             }
 
             int top = stack_push(state);
-            state->stack[top].signage = false;
             state->stack[top].code = 'u';
             state->stack[top].type = 0;
             state->stack[top].size = definition->size;
@@ -95,7 +94,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case '?':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].signage = false;
                     state->stack[top].u.v_bool = *(bool*)(of_type->u.v_ptr + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
@@ -103,7 +101,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case '1':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].signage = false;
                     state->stack[top].u.v_byte = *(uint8_t*)(of_type->u.v_ptr + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
@@ -111,7 +108,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case '2':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].signage = false;
                     state->stack[top].u.v_int16 = *(uint16_t*)(of_type->u.v_ptr + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
@@ -119,7 +115,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case '4':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].signage = false;
                     state->stack[top].u.v_int32 = *(uint32_t*)(of_type->u.v_ptr + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
@@ -127,7 +122,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case '8':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].signage = false;
                     state->stack[top].u.v_int64 = *(uint64_t*)(of_type->u.v_ptr + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
@@ -135,7 +129,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case 'f':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].signage = false;
                     state->stack[top].u.v_float = *(float*)(of_type->u.v_ptr + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
@@ -143,7 +136,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case 'd':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].signage = false;
                     state->stack[top].u.v_double = *(double*)(of_type->u.v_ptr + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
@@ -151,7 +143,6 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case 's': 
                 {
                     int top = stack_push(state);
-                    state->stack[top].signage = false;
                     state->stack[top].u.v_ptr = (void*)(*(const char**)(of_type->u.v_ptr + field_bytes_start));
                     state->stack[top].code = field_code;
                 }
