@@ -122,7 +122,7 @@ void dump_pointers(em_state* state) {
         }
 
         printf("\traw = %p size = %db\n", ptr->raw, ptr->size);
-        printf("\ttype = %p is reference of = %p\n", ptr->concrete_type, ptr->reference_of);
+        printf("\ttype = %p\n", ptr->concrete_type);
 
         if (ptr->concrete_type != NULL) {
             printf("\t\033[0;96m%s (%s)\033[0m size = %db\n", ptr->concrete_type->name, ptr->concrete_type->types, ptr->concrete_type->size);

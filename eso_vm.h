@@ -26,7 +26,6 @@ typedef struct {
     void* raw;
     uint32_t size;
     uint16_t references; // strong references
-    void* reference_of;
     em_type_definition* concrete_type;
 } em_managed_ptr;
 
