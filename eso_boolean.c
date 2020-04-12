@@ -42,7 +42,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '1';
                             state->stack[ptr].u.v_byte = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -58,7 +57,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '2';
                             state->stack[ptr].u.v_int16 = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -74,7 +72,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '4';
                             state->stack[ptr].u.v_int32 = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -90,7 +87,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '8';
                             state->stack[ptr].u.v_int64 = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -106,7 +102,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = 'f';
                             state->stack[ptr].u.v_float = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -122,7 +117,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = 'd';
                             state->stack[ptr].u.v_double = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -158,7 +152,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             int ptr = stack_push(state);
             state->stack[ptr].code = '?';
             state->stack[ptr].u.v_bool = op;
-            state->stack[ptr].size = 0;
         }
         break;
 
@@ -185,7 +178,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             int ptr = stack_push(state);
             state->stack[ptr].code = '?';
             state->stack[ptr].u.v_bool = op;
-            state->stack[ptr].size = 0;
         }
         break;
 
@@ -210,7 +202,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             int ptr = stack_push(state);
             state->stack[ptr].code = '?';
             state->stack[ptr].u.v_bool = op;
-            state->stack[ptr].size = 0;
         }
         break;
 
@@ -258,7 +249,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -274,7 +264,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -290,7 +279,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -306,7 +294,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -322,7 +309,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -338,7 +324,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -376,7 +361,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -392,7 +376,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -408,7 +391,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -424,7 +406,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -440,7 +421,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:
@@ -456,7 +436,6 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                             int ptr = stack_push(state);
                             state->stack[ptr].code = '?';
                             state->stack[ptr].u.v_bool = op;
-                            state->stack[ptr].size = 0;
                         }
                         break;
                         default:

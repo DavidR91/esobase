@@ -39,14 +39,21 @@ int run_udt(em_state* state, const char* code, int index, int len) {
 
             if (definition == NULL) {
                 em_panic(code, index, len, state, "Could not find type '%s' to create", name);
+                free(name);
             }
+
+            free(name);
+
+            em_managed_ptr* mptr = create_managed_ptr(state);
+            mptr->size = definition->size;
+            mptr->raw = malloc(mptr->size);
+            mptr->free_on_stack_pop = true;
+            memset(mptr->raw, 0, mptr->size);
+            mptr->concrete_type = definition;
 
             int top = stack_push(state);
             state->stack[top].code = 'u';
-            state->stack[top].type = 0;
-            state->stack[top].size = definition->size;
-            state->stack[top].u.v_ptr = malloc(definition->size);
-            memset(state->stack[top].u.v_ptr, 0, definition->size);
+            state->stack[top].u.v_mptr = mptr;
         }
         break;
 
@@ -66,7 +73,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 em_panic(code, index, len, state, "Expected a u at stack top to get field value from type");
             }  
 
-            em_type_definition* definition = &state->types[of_type->type];
+            em_type_definition* definition = of_type->u.v_mptr->concrete_type;
 
             int field_bytes_start = 0;
             int field_size = 0;
@@ -94,56 +101,71 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 case '?':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].u.v_bool = *(bool*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].u.v_bool = *(bool*)(of_type->u.v_mptr->raw + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
                 break;
                 case '1':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].u.v_byte = *(uint8_t*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].u.v_byte = *(uint8_t*)(of_type->u.v_mptr->raw + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
                 break;
                 case '2':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].u.v_int16 = *(uint16_t*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].u.v_int16 = *(uint16_t*)(of_type->u.v_mptr->raw + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
                 break;
                 case '4':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].u.v_int32 = *(uint32_t*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].u.v_int32 = *(uint32_t*)(of_type->u.v_mptr->raw + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
                 break;
                 case '8':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].u.v_int64 = *(uint64_t*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].u.v_int64 = *(uint64_t*)(of_type->u.v_mptr->raw + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
                 break;
                 case 'f':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].u.v_float = *(float*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].u.v_float = *(float*)(of_type->u.v_mptr->raw + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
                 break;
                 case 'd':  
                 {
                     int top = stack_push(state);
-                    state->stack[top].u.v_double = *(double*)(of_type->u.v_ptr + field_bytes_start);
+                    state->stack[top].u.v_double = *(double*)(of_type->u.v_mptr->raw + field_bytes_start);
                     state->stack[top].code = field_code;
                 }
                 break;
                 case 's': 
                 {
+                    em_managed_ptr* mptr = create_managed_ptr(state);
+                    mptr->free_on_stack_pop = true; // Guessing right now
+
+                    // Remember: The size of the type HOLDING the string we're going to copy
+                    // has no relation to the length or size of the string we're copying
+
+                    // This sucks
+                    size_t string_length = strlen((*(const char**)(of_type->u.v_mptr->raw + field_bytes_start)));
+
+                    // Effectively duplicating the content we're referencing
+                    mptr->size = string_length + 1; // NUL
+                    mptr->raw = malloc(mptr->size);
+                    memcpy(mptr->raw, *(const char**)(of_type->u.v_mptr->raw + field_bytes_start), mptr->size);
+                    mptr->concrete_type = NULL; // It's a string so no concrete
+
                     int top = stack_push(state);
-                    state->stack[top].u.v_ptr = (void*)(*(const char**)(of_type->u.v_ptr + field_bytes_start));
+                    state->stack[top].u.v_mptr = mptr;
                     state->stack[top].code = field_code;
                 }
                 break;
@@ -171,7 +193,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 em_panic(code, index, len, state, "Expected a u at stack top - 1 to set field value into type");
             }  
 
-            em_type_definition* definition = &state->types[of_type->type];
+            em_type_definition* definition = of_type->u.v_mptr->concrete_type;
 
             int field_bytes_start = 0;
             int field_size = 0;
@@ -204,28 +226,28 @@ int run_udt(em_state* state, const char* code, int index, int len) {
 
             switch(top->code) {
                 case '?':
-                *(bool*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_bool;
+                *(bool*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_bool;
                 break;
                 case '1': 
-                *(uint8_t*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_byte;
+                *(uint8_t*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_byte;
                 break;
                 case '2':  
-                *(uint16_t*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_int16;
+                *(uint16_t*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_int16;
                 break;
                 case '4':  
-                *(uint32_t*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_int32;
+                *(uint32_t*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_int32;
                 break;
                 case '8':  
-                *(uint64_t*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_int64;
+                *(uint64_t*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_int64;
                 break;
                 case 'f':  
-                *(float*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_float;
+                *(float*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_float;
                 break;
                 case 'd':  
-                *(double*)(of_type->u.v_ptr + field_bytes_start) = top->u.v_double;
+                *(double*)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_double;
                 break;
                 case 's':
-                *(const char**)(of_type->u.v_ptr + field_bytes_start) = top->u.v_ptr;
+                *(const char**)(of_type->u.v_mptr->raw + field_bytes_start) = top->u.v_mptr->raw;
                 break;
                 default: 
                 em_panic(code, index, len, state, "Setting field %s of type %c not currently supported", name, field_code);
@@ -252,13 +274,11 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             }
 
             if (field_qty->u.v_int32 <= 0) {
-                em_panic(code, index, len, state, "Not allowed to declare type %s with no fields", name->u.v_ptr);
+                em_panic(code, index, len, state, "Not allowed to declare type %s with no fields", name->u.v_mptr->raw);
             }
 
-            state->type_ptr++;
-
-            em_type_definition* new_type = &state->types[state->type_ptr];
-            new_type->name = name->u.v_ptr;
+            em_type_definition* new_type = create_new_type(state);
+            new_type->name = name->u.v_mptr->raw;
             new_type->types = malloc(field_qty->u.v_int32 + 1);
             memset(new_type->types, 0, field_qty->u.v_int32 + 1);
 
@@ -275,16 +295,16 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 em_stack_item* field_name = stack_top_minus(state, minus);
 
                 if (field_name == NULL || field_name->code != 's') {
-                    em_panic(code, index, len, state, "Expected an s at stack top - %d to define the name of field %d of %s", minus, field, name->u.v_ptr);
+                    em_panic(code, index, len, state, "Expected an s at stack top - %d to define the name of field %d of %s", minus, field, name->u.v_mptr->raw);
                 }
 
-                new_type->field_names[field-1] = field_name->u.v_ptr;
+                new_type->field_names[field-1] = field_name->u.v_mptr->raw;
                 minus--;
 
                 em_stack_item* field_type = stack_top_minus(state, minus);
 
                 if (field_qty == NULL) {
-                    em_panic(code, index, len, state, "Expected an item of any type at stack top - %d to define the type of field %d of %s", minus, field, name->u.v_ptr);
+                    em_panic(code, index, len, state, "Expected an item of any type at stack top - %d to define the type of field %d of %s", minus, field, name->u.v_mptr->raw);
                 }
 
                 new_type->types[type_code_ptr] = field_type->code;

@@ -7,7 +7,6 @@ em_stack_item* stack_pop(em_state* state);
 
 em_stack_item* stack_pop_by(em_state* state, int amount);
 
-
 em_stack_item* stack_top_minus(em_state* state, int minus);
 
 em_stack_item* stack_top(em_state* state);

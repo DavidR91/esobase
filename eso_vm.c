@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #include "eso_vm.h"
+#include "eso_log.h"
 #include "eso_debug.h"
 
 void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...) {
@@ -58,4 +59,28 @@ bool is_code_numeric(char code) {
     }
 
     return false;
+}
+
+em_type_definition* create_new_type(em_state* state) {
+    state->type_ptr++;
+    memset(&state->types[state->type_ptr], 0, sizeof(em_type_definition));
+    return &state->types[state->type_ptr];
+}
+
+em_managed_ptr* create_managed_ptr(em_state* state) {
+    state->pointer_ptr++;
+    memset(&state->pointers[state->pointer_ptr], 0, sizeof(em_managed_ptr));
+    return &state->pointers[state->pointer_ptr];
+}
+
+void free_managed_ptr(const char* code, int index, int len, em_state* state, em_managed_ptr* mptr) {
+
+    if (mptr->size == 0) {
+        em_panic(code, index, len, state, "Attempting to free allocation of zero size: Unlikely to be legitimate allocation");
+    }
+
+    log_verbose("DEBUG VERBOSE\t\tFreeing %db of memory @ %p\n", mptr->size, mptr->raw);
+
+    memset(mptr, 0, sizeof(em_managed_ptr));
+    mptr->dead = true;
 }

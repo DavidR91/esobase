@@ -41,12 +41,18 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             void* arb = malloc(real_size);
             memset(arb, 0, real_size);
 
+            // Create a managed pointer
+            em_managed_ptr* mptr = create_managed_ptr(state);
+            mptr->size = real_size;
+            mptr->raw = arb;
+            mptr->free_on_stack_pop = true; // who knows right now
+            mptr->concrete_type = NULL;
+
             stack_pop(state);
 
             int ptr = stack_push(state);
             state->stack[ptr].code = '*';
-            state->stack[ptr].u.v_ptr = arb;
-            state->stack[ptr].size = real_size;
+            state->stack[ptr].u.v_mptr = mptr;
 
             log_verbose("DEBUG VERBOSE\t\tAllocated %db of memory @ %p\n", real_size, arb);
 
@@ -67,17 +73,7 @@ int run_memory(em_state* state, const char* code, int index, int len) {
                 em_panic(code, index, len, state, "Memory free requires pointer top of stack - found %c\n", top->code);            
             }
 
-            if (top->size == 0) {
-                em_panic(code, index, len, state, "Attempting to free allocation of zero size: Unlikely to be legitimate allocation");
-            }
-
-            log_verbose("DEBUG VERBOSE\t\tFreeing %db of memory @ %p\n", top->size, top->u.v_ptr);
-            free(top->u.v_ptr);
-
-            top->signage = false;
-            top->code = 0;
-            top->u.v_ptr = 0;
-            top->size = 0;
+            free_managed_ptr(code, index, len, state, top->u.v_mptr);
 
             stack_pop(state);   
             return 0;

@@ -42,12 +42,12 @@ int run_debug(em_state* state, const char* code, int index, int len) {
 
             if (one->code == 's' && two->code == 's') {
                 // Do a string compare
-                if (strcmp((const char*)one->u.v_ptr, (const char*)two->u.v_ptr) != 0) {
+                if (strcmp((const char*)one->u.v_mptr->raw, (const char*)two->u.v_mptr->raw) != 0) {
                     em_panic(code, index, len, state, "Assertion failed (string compare)");
                 }
             } else {
                 if (memcmp(&one->u, &two->u, sizeof(one->u)) != 0) {
-                    em_panic(code, index, len, state, "Assertion failed (%p vs. %p)", one->u.v_ptr, two->u.v_ptr);
+                    em_panic(code, index, len, state, "Assertion failed (%p vs. %p)", &one->u, &two->u);
                 }
             }
 
@@ -57,6 +57,10 @@ int run_debug(em_state* state, const char* code, int index, int len) {
             log_verbose("DEBUG VERBOSE\t\tAssertion successful\n");
         }
         break;
+
+        case 'p':
+        dump_pointers(state);
+        return 0;
 
         default:
             em_panic(code, index, len, state, "Unknown debug instruction %c", current_code);
@@ -85,26 +89,44 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
         case '8': fprintf(stdout, "%llu", item->u.v_int64);break;
         case 'f': fprintf(stdout, "%f", item->u.v_float);break;
         case 'd': fprintf(stdout, "%f", item->u.v_double);break;
-        case 's': fprintf(stdout, "\"%s\\0\" %p length %d", item->u.v_ptr, item->u.v_ptr, item->size);break;
-        case '*': fprintf(stdout, "%p length %d", item->u.v_ptr, item->size); break;
+        case 's': fprintf(stdout, "\"%s\\0\" %p length %d", item->u.v_mptr->raw, item->u.v_mptr->raw, item->u.v_mptr->size);break;
+        case '*': fprintf(stdout, "%p length %d", item->u.v_mptr->raw, item->u.v_mptr->size); break;
         case '^': break;
         case 'u': 
         {
             // Find relevant type
-            em_type_definition* type = &state->types[item->type];
+            em_type_definition* type = item->u.v_mptr->concrete_type;
 
-            fprintf(stdout, "%s (%db)", type->name, item->size);
+            fprintf(stdout, "%s (%db)", type->name, item->u.v_mptr->size);
         }
         break;
     }
 
     fprintf(stdout, "%s", reset_colour);
-
-    if (item->signage) {
-         fprintf(stdout, " (signed) ");
-    }
-
     fprintf(stdout, "\n");
+}
+
+void dump_pointers(em_state* state) {
+    for(int i = 0; i <= state->pointer_ptr; i++) {
+        em_managed_ptr* ptr = &state->pointers[i];
+
+        if (ptr->dead)
+        {
+            printf("%2d) *** DEAD *** \n", i);
+        }
+        else {
+            printf("%2d) Alive \n", i);
+        }
+
+        printf("\traw = %p size = %db\n", ptr->raw, ptr->size);
+        printf("\tfree on pop = %d type = %p\n", ptr->free_on_stack_pop, ptr->concrete_type);
+
+        if (ptr->concrete_type != NULL) {
+            printf("\t\033[0;96m%s (%s)\033[0m size = %db\n", ptr->concrete_type->name, ptr->concrete_type->types, ptr->concrete_type->size);
+        }
+
+        printf("\n");
+    }
 }
 
 void dump_stack(em_state* state) {

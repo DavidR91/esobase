@@ -11,3 +11,5 @@ void dump_types(em_state* state);
 void dump_instructions(const char* code, int index, int len, em_state* state);
 
 const char* code_colour_code(char code);
+
+void dump_pointers(em_state* state);

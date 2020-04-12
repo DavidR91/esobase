@@ -1,4 +1,4 @@
-clang  -g -fsanitize=address *.c -o eb
+clang  -g -fsanitize=address *.c -o eb || exit 1
 
 passed=0
 

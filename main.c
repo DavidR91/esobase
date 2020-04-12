@@ -92,6 +92,11 @@ void run(const char* filename, const char* code, int len) {
     state.types = malloc(sizeof(em_type_definition) * state.max_types);
     memset(state.types, 0, sizeof(em_type_definition) * state.max_types);
 
+    state.max_pointers = 2048;
+    state.pointers = malloc(sizeof(em_managed_ptr) * state.max_pointers);
+    memset(state.pointers, 0, sizeof(em_managed_ptr) * state.max_pointers);
+    state.pointer_ptr = -1;
+
     ESOMODE mode = EM_MEMORY;
 
     for (int i = 0; i < len; i++) {

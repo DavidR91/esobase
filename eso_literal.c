@@ -155,10 +155,15 @@ int run_literal(em_state* state, const char* code, int index, int len) {
                 em_panic(code, index, len, state, "Could not find a complete literal for string: Did you forget to terminate it?");
             }
 
+            em_managed_ptr* mptr = create_managed_ptr(state);
+            mptr->raw = text;
+            mptr->size = strlen(text) + 1; //alloc until is always NUL terminated
+            mptr->free_on_stack_pop = true;
+            mptr->concrete_type = NULL;
+
             int top = stack_push(state);
             state->stack[top].code = current_code;
-            state->stack[top].u.v_ptr = text; 
-            state->stack[top].size = strlen(text) + 1; //alloc until is always NUL terminated
+            state->stack[top].u.v_mptr = mptr; 
 
             log_verbose("DEBUG VERBOSE\t\tPush string literal %s skip %d\n", text, size_to_skip);
         }

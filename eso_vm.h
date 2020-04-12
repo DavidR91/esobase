@@ -16,9 +16,22 @@ typedef enum {
 } ESOMODE;
 
 typedef struct {
-    char code;
-    bool signage;
+    const char* name;
+    char* types;
+    char** field_names;
+    int size; // total size in bytes of the fields inside
+} em_type_definition;
+
+typedef struct {
+    void* raw;
     uint32_t size;
+    bool free_on_stack_pop;
+    em_type_definition* concrete_type;
+    bool dead;
+} em_managed_ptr;
+
+typedef struct {
+    char code;
     union {
         bool v_bool;
         uint8_t v_byte;
@@ -27,22 +40,18 @@ typedef struct {
         uint64_t v_int64;
         float v_float;
         double v_double;
-        void* v_ptr;
+        em_managed_ptr* v_mptr;
     } u;
-    uint16_t type;
 } em_stack_item;
-
-typedef struct {
-    const char* name;
-    char* types;
-    char** field_names;
-    int size; // total size in bytes of the fields inside
-} em_type_definition;
 
 typedef struct {
     em_type_definition* types;
     int type_ptr;
     int max_types;
+
+    em_managed_ptr* pointers;
+    int pointer_ptr;
+    int max_pointers; // Obviously needs to be changed to grow
 
     em_stack_item* stack;
     int stack_ptr;
@@ -52,10 +61,14 @@ typedef struct {
     const char* filename;
     bool control_flow_if_flag;
     uint8_t control_flow_token;
-
 } em_state;
 
 void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...);
 size_t code_sizeof(char code);
 bool is_code_numeric(char code);
 char safe_get(const char* code, int index, int len);
+
+em_type_definition* create_new_type(em_state* state);
+em_managed_ptr* create_managed_ptr(em_state* state);
+void free_managed_ptr(const char* code, int index, int len, em_state* state, em_managed_ptr* mptr);
+
