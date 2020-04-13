@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #include "eso_vm.h"
+#include "eso_log.h"
 
 // Return everything in code until the specified terminator is hit.
 // The caller should resume from *resume in order to skip the eaten 
@@ -24,6 +25,8 @@ char* alloc_until(em_state* state, const char* code, int index, int len, char te
     int bytes_consumed = 0;
 
     for (int i = starting_index ; i < len; i++) {
+
+        log_ingestion(code[i]);
         bytes_consumed++;
         total_skip++;
         if (code[i] == terminator) {

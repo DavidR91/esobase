@@ -3,7 +3,6 @@
 // Wrapping and unwrapping calls in and out of C
 // Padding for UDTs so they are compatible with C
 // callable functions (?)
-// Control flow breaks line number (loops)
 // Control flow should not seek to comments or the same symbol when set
 // Signed is broken (unsigned everywhere)
 // Fix perma allocs so they are freeable before exit
@@ -34,7 +33,7 @@ void run(em_state* state, const char* i, int len);
 int main(int argc, char** argv) {
 
     if (argc < 2) {
-        fprintf(stderr, "At least one argument required\n");
+        log_printf( "At least one argument required\n");
         exit(0);
     }
 
@@ -44,10 +43,10 @@ int main(int argc, char** argv) {
 }
 
 void run_file(const char* file) {
-    FILE* input = fopen(file, "r");
+    FILE* input = fopen(file, "rb");
 
     if (input == NULL) {
-        fprintf(stderr, "Cannot find or open %s\n", file);
+        log_printf( "Cannot find or open %s\n", file);
         exit(1);
         return;
     }
@@ -64,11 +63,11 @@ void run_file(const char* file) {
     memset(file_content, 0, length+1);
 
     if (fread(file_content, 1, length, input) != length) {
-        fprintf(stderr, "Could not successfully read the entire length of %s\n", file);
+        log_printf( "Could not successfully read the entire length of %s\n", file);
         exit(1);
     }
 
-    file_content[length] = 0;
+    file_content[length] = 0;   
 
     run(state, file_content, strlen(file_content));
 
@@ -102,12 +101,6 @@ void run(em_state* state, const char* code, int len) {
             continue;
         }
 
-        if (code[i] == '\n') {
-            state->file_line++;
-            log_verbose("LINE %d\n", state->file_line);
-            continue;
-        }
-
         if (isspace(code[i]) || code[i] == '\r') {
             continue;
         }
@@ -117,8 +110,14 @@ void run(em_state* state, const char* code, int len) {
 
             // Change mode
             case 'm': {
+
+                log_ingestion(code[i]);
+
                 char new_mode = safe_get(code, i+1, len);
                 state->last_mode_change = i;
+
+                log_ingestion(new_mode);
+
                 switch(tolower(new_mode)) {
                     case 'b': mode = EM_BOOLEAN; break;
                     case 'm': mode = EM_MEMORY; break;
@@ -130,6 +129,7 @@ void run(em_state* state, const char* code, int len) {
                     case 'f': mode = EM_CONTROL_FLOW; break;
                 default:
                     em_panic(code, i, len, state, "Unknown mode change '%c'\n", new_mode);
+                    break;
                 }
 
                 log_verbose("\033[0;31m%c %c\033[0;0m (Mode change)\n", code[i], new_mode);

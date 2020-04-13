@@ -16,6 +16,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
     char current_code = tolower(code[index]);
 
     log_verbose("\033[0;31m%c\033[0;0m (Boolean)\n", current_code);
+    log_ingestion(current_code);
 
     switch(current_code) {
         // add

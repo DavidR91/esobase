@@ -64,7 +64,6 @@ typedef struct {
     int stack_ptr;
     int stack_size;
     int last_mode_change;
-    int file_line;
     const char* filename;
     bool control_flow_if_flag;
     uint8_t control_flow_token;
@@ -101,4 +100,7 @@ void em_usercode_free(em_state* state, void* ptr, size_t size, bool bookkeep_as_
 // This is just for bookkeeping to say usercode now owns something originally owned
 // by the parser
 void em_transfer_alloc_parser_usercode(em_state* state, size_t size);
+
+uint32_t calculate_file_line(em_state* state, const char* code, int index, int len);
+uint32_t calculate_file_column(em_state* state, const char* code, int index, int len);
 

@@ -1,0 +1,49 @@
+# Demo/test of mixing together different symbols for control flow
+# 
+# WATCH OUT FOR LINE NUMBER ASSERTIONS IN HERE!!
+
+ml
+4 2;
+
+2 76; # Letter 'L'
+mf s # Change symbol
+
+L mdl11; 
+    ml
+    4 2;
+    mb +
+ 
+    # Duplicate the answer so it doesn't get eaten by compare
+    ms d
+ 
+    # Is it over 10?
+    ml
+    4 10;
+    mb >
+ 
+    # Break out if we're over 10
+    mf 
+    i # Toggle conditional ON
+        # Change the control symbol so we can break
+        ml 2 36; # '$'
+        mf s
+ 
+        > mdl31;
+ 
+        # Unset it again if we didn't
+        ml 2 76;
+        mf s
+ 
+    i # Toggle conditional OFF
+ 
+    # (See our stack)
+    md s
+
+mf 
+< mdl43;
+
+$
+# We should have 12
+ml 4 12;
+md a
+l49;

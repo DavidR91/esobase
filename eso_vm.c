@@ -108,26 +108,26 @@ void em_parser_free(em_state* state, void* ptr) {
 void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...) {
     va_list argptr;
     va_start(argptr, format);
-    fprintf(stderr, "\n%s\n", "\033[0;31m* * * * PANIC * * * *\n\n");
-    vfprintf(stderr, format, argptr);
+    log_printf( "\n%s\n", "\033[0;31m* * * * PANIC * * * *\n\n");
+    vfprintf(stdout, format, argptr);
 
-    fprintf(stderr, "\n\n");
+    log_printf( "\n\n");
     
     if (state != NULL) {
         dump_instructions(code, index, len, state);
     } else {
-        fprintf(stderr, "(No machine state and no instructions available)\n");
+        log_printf( "(No machine state and no instructions available)\n");
     }
 
-    fprintf(stderr, "%s", "\033[0m\n\n");
+    log_printf( "%s", "\033[0m\n\n");
 
     if (state != NULL) {
         dump_stack(state);
     } else {
-        fprintf(stderr, "(No machine state and no stack available)\n");
+        log_printf( "(No machine state and no stack available)\n");
     }
 
-    fprintf(stderr, "\n");
+    log_printf( "\n");
     va_end(argptr);
     exit(1);
 }
@@ -232,4 +232,26 @@ void free_managed_ptr(const char* code, int index, int len, em_state* state, em_
         memset(mptr, 0, sizeof(em_managed_ptr));       
         em_usercode_free(state, mptr, sizeof(em_managed_ptr), true); // Overhead
     }
+}
+
+uint32_t calculate_file_line(em_state* state, const char* code, int index, int len) {
+    uint32_t line = 1;
+    for(int i = 0; i < index; i++) {
+        if (code[i] == '\n') {
+            line++;
+        }
+    }
+    return line;
+}
+
+uint32_t calculate_file_column(em_state* state, const char* code, int index, int len) {
+    uint32_t column = 1;
+    for(int i = 0; i < index; i++) {
+        if (code[i] == '\n') {
+            column = 1;
+        } else {
+            column++;
+        }
+    }
+    return column;
 }

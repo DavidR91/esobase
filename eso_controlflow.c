@@ -16,6 +16,7 @@ int run_control(em_state* state, const char* code, int index, int len) {
 
     char current_code = code[index];
     log_verbose("\033[0;31m%c\033[0;0m (Control flow)\n", current_code);
+    log_ingestion(current_code);
 
     // The * marker has no meaning on its own so skip it
     if (current_code == state->control_flow_token) {
@@ -32,8 +33,16 @@ int run_control(em_state* state, const char* code, int index, int len) {
 
         case 's': 
         {
-            // Set the control flow symbol
-            state->control_flow_token = safe_get(code, index+1, len);
+            // Set the control flow symbol: Must be specified as an ASCII code
+            em_stack_item* top = stack_top(state);
+
+            if (top == NULL || top->code != '2') {
+                em_panic(code, index, len, state, "Setting control flow symbol requires a 1 on top of the stack (ASCII code for new symbol)");
+            }
+
+            state->control_flow_token = top->u.v_byte;
+
+            stack_pop(state);
         }
         return index+1;
 
@@ -59,17 +68,12 @@ int run_control(em_state* state, const char* code, int index, int len) {
                 stack_pop(state);
             }
 
-            int new_line = state->file_line;
-
             // Go backwards
             for (int i = index; i >= 0; i--) {
 
-                if (code[i] == '\n') {
-                    new_line--;
-                }
-
                 if (code[i] == state->control_flow_token) {
-                    state->file_line = new_line;
+                    log_ingestion(code[i]);
+                    log_verbose("Control flow backward jump to index %d\n", i);
                     return i;
                 }
             }
@@ -97,16 +101,14 @@ int run_control(em_state* state, const char* code, int index, int len) {
                 stack_pop(state);
             }
 
-            int new_line = state->file_line;
+            log_verbose("Control flow forward jump search starting at %d\n", index);
 
             // Go forwards
             for (int i = index; i < len; i++) {
 
-                if (code[i] == '\n') {
-                    new_line++;
-                }
-
                 if (code[i] == state->control_flow_token) {
+                    log_ingestion(code[i]);
+                    log_verbose("Control flow forward jump to index %d\n", i);
                     return i;
                 }
             }
