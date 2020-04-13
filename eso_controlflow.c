@@ -59,9 +59,17 @@ int run_control(em_state* state, const char* code, int index, int len) {
                 stack_pop(state);
             }
 
+            int new_line = state->file_line;
+
             // Go backwards
             for (int i = index; i >= 0; i--) {
+
+                if (code[i] == '\n') {
+                    new_line--;
+                }
+
                 if (code[i] == state->control_flow_token) {
+                    state->file_line = new_line;
                     return i;
                 }
             }
@@ -89,8 +97,15 @@ int run_control(em_state* state, const char* code, int index, int len) {
                 stack_pop(state);
             }
 
+            int new_line = state->file_line;
+
             // Go forwards
             for (int i = index; i < len; i++) {
+
+                if (code[i] == '\n') {
+                    new_line++;
+                }
+
                 if (code[i] == state->control_flow_token) {
                     return i;
                 }
