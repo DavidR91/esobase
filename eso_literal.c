@@ -33,14 +33,14 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '1': 
         {
-            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* test = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for byte: Did you forget to terminate it?");
             }
 
             uint8_t v = atoi(test);
-            em_parser_free(test);
+            em_parser_free(state, test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
@@ -52,14 +52,14 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '2': 
         {
-            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* test = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for int16: Did you forget to terminate it?");
             }
 
             uint16_t v = atoi(test);
-            em_parser_free(test);
+            em_parser_free(state, test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
@@ -71,14 +71,14 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '4': 
         {
-            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* test = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for int32: Did you forget to terminate it?");
             }
 
             uint32_t v = atoi(test);
-            em_parser_free(test);
+            em_parser_free(state, test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
@@ -90,14 +90,14 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case '8': 
         {
-            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* test = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for int64: Did you forget to terminate it?");
             }
 
             uint64_t v = strtol(test, NULL, 10);
-            em_parser_free(test);
+            em_parser_free(state, test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
@@ -109,14 +109,14 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case 'f':  
         {
-            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* test = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for float32: Did you forget to terminate it?");
             }
 
             float v = strtod(test, NULL);
-            em_parser_free(test);
+            em_parser_free(state, test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
@@ -128,14 +128,14 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case 'd':  
         {
-            char* test = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* test = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
             if (test == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for float64: Did you forget to terminate it?");
             }
 
             double v = strtod(test, NULL);
-            em_parser_free(test);
+            em_parser_free(state, test);
 
             int top = stack_push(state);
             state->stack[top].code = current_code;
@@ -147,7 +147,7 @@ int run_literal(em_state* state, const char* code, int index, int len) {
 
         case 's': 
         {
-            char* text = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* text = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
             if (text == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete literal for string: Did you forget to terminate it?");
@@ -158,6 +158,9 @@ int run_literal(em_state* state, const char* code, int index, int len) {
             mptr->size = strlen(text) + 1; //alloc until is always NUL terminated
             mptr->concrete_type = NULL;
             mptr->references++; // Stack holds a reference
+
+            // Usercode now owns this (bookkeeping)
+            em_transfer_alloc_parser_usercode(state, mptr->size);
 
             log_verbose("String push created %db managed memory for value \"%s\"\n", mptr->size, mptr->raw);
 

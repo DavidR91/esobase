@@ -23,7 +23,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
         // Create
         case 'c':
         { 
-            char* name = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* name = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
             if (name == NULL) {
                 em_panic(code, index, len, state, "Could not find a complete name for creating type: Did you forget to terminate it?");
@@ -40,14 +40,14 @@ int run_udt(em_state* state, const char* code, int index, int len) {
 
             if (definition == NULL) {
                 em_panic(code, index, len, state, "Could not find type '%s' to create", name);
-                em_parser_free(name);
+                em_parser_free(state, name);
             }
 
-            em_parser_free(name);
+            em_parser_free(state, name);
 
             em_managed_ptr* mptr = create_managed_ptr(state);
             mptr->size = definition->size;
-            mptr->raw = em_usercode_alloc(mptr->size);
+            mptr->raw = em_usercode_alloc(state, definition->size, false);
             memset(mptr->raw, 0, mptr->size);
             mptr->concrete_type = definition;
             mptr->references++; // Stack holds reference
@@ -64,7 +64,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
         // Get a field from a UDT and push it onto the stack
         case 'g':
         {
-            char* name = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* name = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
              if (name == NULL) {
                  em_panic(code, index, len, state, "Could not find a complete name for a field to retrieve: Did you forget to terminate it?");
@@ -177,7 +177,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
         // Set a field in a UDT from the stack
         case 's':
         {
-            char* name = alloc_until(code, index+1, len, ';', true, &size_to_skip);
+            char* name = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
 
              if (name == NULL) {
                  em_panic(code, index, len, state, "Could not find a complete name for a field to set: Did you forget to terminate it?");
@@ -291,14 +291,14 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             em_type_definition* new_type = create_new_type(state);
 
             // Create a copy of the name because we don't expect it to stick around
-            new_type->name = em_perma_alloc(name->u.v_mptr->size);
+            new_type->name = em_perma_alloc(state, name->u.v_mptr->size);
             memset(new_type->name, 0, name->u.v_mptr->size);
             memcpy(new_type->name, name->u.v_mptr->raw, name->u.v_mptr->size);
 
-            new_type->types = em_perma_alloc(field_qty->u.v_int32 + 1);
+            new_type->types = em_perma_alloc(state, field_qty->u.v_int32 + 1);
             memset(new_type->types, 0, field_qty->u.v_int32 + 1);
 
-            new_type->field_names = em_perma_alloc(sizeof(char*) * field_qty->u.v_int32);
+            new_type->field_names = em_perma_alloc(state, sizeof(char*) * field_qty->u.v_int32);
             memset(new_type->field_names, 0, sizeof(char*) * field_qty->u.v_int32);
 
             // We need a TYPE and NAME for each field
@@ -315,7 +315,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 }
 
                 // Create a copy of each field name so it can't disappear
-                char* field_name_copy = em_perma_alloc(field_name->u.v_mptr->size);
+                char* field_name_copy = em_perma_alloc(state, field_name->u.v_mptr->size);
                 memset(field_name_copy, 0, field_name->u.v_mptr->size);
                 memcpy(field_name_copy, field_name->u.v_mptr->raw, field_name->u.v_mptr->size);
 

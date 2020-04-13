@@ -9,23 +9,100 @@
 #include "eso_log.h"
 #include "eso_debug.h"
 
-void* em_perma_alloc(size_t size) {
+em_state* create_state(const char* filename) {
+
+    em_state* state = em_perma_alloc(NULL, sizeof(em_state));
+    memset(state, 0, sizeof(em_state));
+    state->memory_permanent.allocated = sizeof(em_state); 
+    state->memory_permanent.peak_allocated = sizeof(em_state); 
+    state->stack_size = 4096;
+    state->stack_ptr = -1;
+    state->stack = em_perma_alloc(state, sizeof(em_stack_item) * state->stack_size);
+    state->filename = filename;
+    memset(state->stack, 0, sizeof(em_stack_item) * state->stack_size);
+
+    state->control_flow_token = '@';
+    state->type_ptr = -1;
+    state->max_types = 255;
+    state->types = em_perma_alloc(state, sizeof(em_type_definition) * state->max_types);
+    memset(state->types, 0, sizeof(em_type_definition) * state->max_types);
+    return state;
+}
+
+void* em_perma_alloc(em_state* state, size_t size) {
+    if (state != NULL) {
+        state->memory_permanent.allocated += size;
+
+        if (state->memory_permanent.allocated > state->memory_permanent.peak_allocated) {
+            state->memory_permanent.peak_allocated = state->memory_permanent.allocated;
+        }
+    }
+
     return malloc(size);
 }
 
-void* em_usercode_alloc(size_t size) {
+void* em_usercode_alloc(em_state* state, size_t size, bool bookkeep_as_overhead) {
+
+    log_verbose("USERCODE ALLOCATE %d %db\n", size, state->memory_usercode.allocated);
+
+    if (state != NULL) {
+
+        if (bookkeep_as_overhead) {
+             state->memory_usercode.overhead += size;
+
+            if (state->memory_usercode.overhead > state->memory_usercode.peak_overhead) {
+                state->memory_usercode.peak_overhead = state->memory_usercode.overhead;
+            }
+        } else {
+
+            state->memory_usercode.allocated += size;
+           
+
+            if (state->memory_usercode.allocated > state->memory_usercode.peak_allocated) {
+                state->memory_usercode.peak_allocated = state->memory_usercode.allocated;
+            }
+        }
+
+    }
+
     return malloc(size);
 }
 
-void em_usercode_free(void* ptr, size_t size) {
+void em_usercode_free(em_state* state, void* ptr, size_t size, bool bookkeep_as_overhead) {
+
+    log_verbose("USERCODE FREE %d %db\n", size, state->memory_usercode.allocated);
+
+    if (state != NULL) {
+
+        if (bookkeep_as_overhead) {
+            state->memory_usercode.overhead -= size;
+        } else {
+            state->memory_usercode.allocated -= size;
+        }
+    }
+
     free(ptr);
 }
 
-void* em_parser_alloc(size_t size) {
+void* em_parser_alloc(em_state* state, size_t size) {
+
+    if (state != NULL) {
+        state->memory_parser.allocated += size;
+
+        if (state->memory_parser.allocated > state->memory_parser.peak_allocated) {
+            state->memory_parser.peak_allocated = state->memory_parser.allocated;
+        }
+    }
+
     return malloc(size);
 }
 
-void em_parser_free(void* ptr) {
+void em_transfer_alloc_parser_usercode(em_state* state, size_t size) {
+    state->memory_parser.allocated -= size;
+    state->memory_usercode.allocated += size;
+}
+
+void em_parser_free(em_state* state, void* ptr) {
     free(ptr);
 }
 
@@ -99,9 +176,9 @@ em_type_definition* create_new_type(em_state* state) {
 }
 
 em_managed_ptr* create_managed_ptr(em_state* state) {
-    state->pointer_ptr++;
-    memset(&state->pointers[state->pointer_ptr], 0, sizeof(em_managed_ptr));
-    return &state->pointers[state->pointer_ptr];
+    em_managed_ptr* ptr = em_usercode_alloc(state, sizeof(em_managed_ptr), true); // Pure overhead
+    memset(ptr, 0, sizeof(em_managed_ptr));
+    return ptr;
 }
 
 void free_managed_ptr(const char* code, int index, int len, em_state* state, em_managed_ptr* mptr) {
@@ -134,7 +211,8 @@ void free_managed_ptr(const char* code, int index, int len, em_state* state, em_
             }
         }
 
-        em_usercode_free(mptr->raw, mptr->size);
+        em_usercode_free(state, mptr->raw, mptr->size, false); // Real memory
         memset(mptr, 0, sizeof(em_managed_ptr));       
+        em_usercode_free(state, mptr, sizeof(em_managed_ptr), true); // Overhead
     }
 }

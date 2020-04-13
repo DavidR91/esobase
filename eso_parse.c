@@ -11,7 +11,7 @@
 // The caller should resume from *resume in order to skip the eaten 
 // text and the terminator. NULL returned if terminator not found before
 // len
-char* alloc_until(const char* code, int index, int len, char terminator, bool eat_whitespace, int* size_to_skip) {
+char* alloc_until(em_state* state, const char* code, int index, int len, char terminator, bool eat_whitespace, int* size_to_skip) {
 
     int total_skip = 0;
     int starting_index = index;
@@ -29,7 +29,7 @@ char* alloc_until(const char* code, int index, int len, char terminator, bool ea
         if (code[i] == terminator) {
             
             int build_length = bytes_consumed + 1;
-            char* built = em_parser_alloc(build_length);
+            char* built = em_parser_alloc(state, build_length);
 
             memset(built, 0, build_length);
             memcpy(built, code+starting_index, i - starting_index);

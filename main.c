@@ -27,11 +27,9 @@
 #include "eso_controlflow.h"
 
 void run_file(const char* file);
-void run(const char* filename, const char* i, int len);
+void run(em_state* state, const char* i, int len);
 
 int main(int argc, char** argv) {
-
-    time(NULL);
 
     if (argc < 2) {
         fprintf(stderr, "At least one argument required\n");
@@ -58,7 +56,9 @@ void run_file(const char* file) {
 
     rewind(input);
 
-    char* file_content = em_perma_alloc(length+1);
+    em_state* state = create_state(file);
+
+    char* file_content = em_perma_alloc(state, length+1);
     memset(file_content, 0, length+1);
 
     if (fread(file_content, 1, length, input) != length) {
@@ -68,33 +68,16 @@ void run_file(const char* file) {
 
     file_content[length] = 0;
 
-    run(file, file_content, strlen(file_content));
+    run(state, file_content, strlen(file_content));
+
+    assert_no_leak(state);
 
     fclose(input);
 }
 
-void run(const char* filename, const char* code, int len) {
+void run(em_state* state, const char* code, int len) {
 
     bool premature_exit = false;
-
-    em_state state;
-    memset(&state, 0, sizeof(em_state));
-    state.stack_size = 4096;
-    state.stack_ptr = -1;
-    state.stack = em_perma_alloc(sizeof(em_stack_item) * state.stack_size);
-    state.filename = filename;
-    memset(state.stack, 0, sizeof(em_stack_item) * state.stack_size);
-
-    state.control_flow_token = '@';
-    state.type_ptr = -1;
-    state.max_types = 255;
-    state.types = em_perma_alloc(sizeof(em_type_definition) * state.max_types);
-    memset(state.types, 0, sizeof(em_type_definition) * state.max_types);
-
-    state.max_pointers = 2048;
-    state.pointers = em_perma_alloc(sizeof(em_managed_ptr) * state.max_pointers);
-    memset(state.pointers, 0, sizeof(em_managed_ptr) * state.max_pointers);
-    state.pointer_ptr = -1;
 
     ESOMODE mode = EM_MEMORY;
 
@@ -118,7 +101,7 @@ void run(const char* filename, const char* code, int len) {
         }
 
         if (code[i] == '\n') {
-            state.file_line++;
+            state->file_line++;
             continue;
         }
 
@@ -132,7 +115,7 @@ void run(const char* filename, const char* code, int len) {
             // Change mode
             case 'm': {
                 char new_mode = safe_get(code, i+1, len);
-                state.last_mode_change = i;
+                state->last_mode_change = i;
                 switch(tolower(new_mode)) {
                     case 'b': mode = EM_BOOLEAN; break;
                     case 'm': mode = EM_MEMORY; break;
@@ -143,7 +126,7 @@ void run(const char* filename, const char* code, int len) {
                     case 'u': mode = EM_UDT; break;
                     case 'f': mode = EM_CONTROL_FLOW; break;
                 default:
-                    em_panic(code, i, len, &state, "Unknown mode change '%c'\n", new_mode);
+                    em_panic(code, i, len, state, "Unknown mode change '%c'\n", new_mode);
                 }
 
                 log_verbose("\033[0;31m%c %c\033[0;0m (Mode change)\n", code[i], new_mode);
@@ -159,18 +142,18 @@ void run(const char* filename, const char* code, int len) {
 
                 // Allow modes to eat text
                 switch(mode) {
-                    case EM_MEMORY: skip = run_memory(&state, code, i, len); break;
-                    case EM_LITERAL: skip = run_literal(&state, code, i, len); break;
-                    case EM_STACK: skip = run_stack(&state, code, i, len); break;
+                    case EM_MEMORY: skip = run_memory(state, code, i, len); break;
+                    case EM_LITERAL: skip = run_literal(state, code, i, len); break;
+                    case EM_STACK: skip = run_stack(state, code, i, len); break;
                     case EM_CC: break;
-                    case EM_DEBUG: skip = run_debug(&state, code, i, len); break;
-                    case EM_BOOLEAN: skip = run_boolean(&state, code, i, len); break;
-                    case EM_UDT: skip = run_udt(&state, code, i, len); break;
+                    case EM_DEBUG: skip = run_debug(state, code, i, len); break;
+                    case EM_BOOLEAN: skip = run_boolean(state, code, i, len); break;
+                    case EM_UDT: skip = run_udt(state, code, i, len); break;
 
                     // Unlike other modes control flow directly sets where
                     // we resume from
                     case EM_CONTROL_FLOW: 
-                        i = run_control(&state, code, i, len);
+                        i = run_control(state, code, i, len);
                         continue;
                 }
 

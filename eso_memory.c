@@ -38,7 +38,7 @@ int run_memory(em_state* state, const char* code, int index, int len) {
                 default: em_panic(code, index, len, state, "Memory allocation requires integer number on top of stack - found %c\n", top->code);
             }
 
-            void* arb = em_usercode_alloc(real_size);
+            void* arb = em_usercode_alloc(state, real_size, false);
             memset(arb, 0, real_size);
 
             // Create a managed pointer

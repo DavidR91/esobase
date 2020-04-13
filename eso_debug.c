@@ -10,6 +10,32 @@
 #include "eso_log.h"
 #include "eso_debug.h"
 
+void print_memory_use(em_state* state) {
+
+    printf("PERMANENT\t\tA:%10db\tP:%10db\n\n",
+        state->memory_permanent.allocated,
+        state->memory_permanent.peak_allocated);
+
+    printf("PARSER   \t\tA:%10db\tP:%10db\n\n",
+        state->memory_parser.allocated,
+        state->memory_parser.peak_allocated);
+
+    printf("USERCODE \t\tA:%10db\tP:%10db\t\n\t\t\tO:%10db\tP:%10db\n",
+        state->memory_usercode.allocated,
+        state->memory_usercode.peak_allocated,
+        state->memory_usercode.overhead,
+        state->memory_usercode.peak_overhead);
+}
+
+void assert_no_leak(em_state* state) {
+
+    if (state->memory_usercode.allocated != 0) {
+        fprintf(stderr, "\033[0;31m********\n\n\nUSERCODE MEMORY LEAK (%db)\n\n\n********\033[0;0m\n", state->memory_usercode.allocated);
+        print_memory_use(state);
+        exit(1);
+    }
+}
+
 int run_debug(em_state* state, const char* code, int index, int len) {
 
     char current_code = tolower(code[index]);
@@ -31,6 +57,10 @@ int run_debug(em_state* state, const char* code, int index, int len) {
         // Type map
         case 'u':
         dump_types(state);
+        break;
+
+        case 'r': 
+        print_memory_use(state);
         break;
 
         // Assert that the two stack items present contain equivalent values
@@ -110,26 +140,26 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
 }
 
 void dump_pointers(em_state* state) {
-    for(int i = 0; i <= state->pointer_ptr; i++) {
-        em_managed_ptr* ptr = &state->pointers[i];
+    // for(int i = 0; i <= state->pointer_ptr; i++) {
+    //     em_managed_ptr* ptr = &state->pointers[i];
 
-        if (ptr->references <= 0)
-        {
-            printf("%2d) %p *** DEAD *** \n", i, ptr);
-        }
-        else {
-            printf("%2d) %p Alive (%d references)\n", i, ptr, ptr->references);
-        }
+    //     if (ptr->references <= 0)
+    //     {
+    //         printf("%2d) %p *** DEAD *** \n", i, ptr);
+    //     }
+    //     else {
+    //         printf("%2d) %p Alive (%d references)\n", i, ptr, ptr->references);
+    //     }
 
-        printf("\traw = %p size = %db\n", ptr->raw, ptr->size);
-        printf("\ttype = %p\n", ptr->concrete_type);
+    //     printf("\traw = %p size = %db\n", ptr->raw, ptr->size);
+    //     printf("\ttype = %p\n", ptr->concrete_type);
 
-        if (ptr->concrete_type != NULL) {
-            printf("\t\033[0;96m%s (%s)\033[0m size = %db\n", ptr->concrete_type->name, ptr->concrete_type->types, ptr->concrete_type->size);
-        }
+    //     if (ptr->concrete_type != NULL) {
+    //         printf("\t\033[0;96m%s (%s)\033[0m size = %db\n", ptr->concrete_type->name, ptr->concrete_type->types, ptr->concrete_type->size);
+    //     }
 
-        printf("\n");
-    }
+    //     printf("\n");
+    // }
 }
 
 void dump_stack(em_state* state) {

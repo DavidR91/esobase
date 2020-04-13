@@ -44,13 +44,20 @@ typedef struct {
 } em_stack_item;
 
 typedef struct {
+
+    // Currently allocated
+    uint32_t allocated;
+    uint32_t peak_allocated; 
+
+    uint32_t overhead;
+    uint32_t peak_overhead;
+
+} em_memory_use;
+
+typedef struct {
     em_type_definition* types;
     int type_ptr;
     int max_types;
-
-    em_managed_ptr* pointers;
-    int pointer_ptr;
-    int max_pointers; // Obviously needs to be changed to grow
 
     em_stack_item* stack;
     int stack_ptr;
@@ -60,7 +67,14 @@ typedef struct {
     const char* filename;
     bool control_flow_if_flag;
     uint8_t control_flow_token;
+
+    em_memory_use memory_permanent;
+    em_memory_use memory_usercode;
+    em_memory_use memory_parser;
 } em_state;
+
+em_state* create_state();
+void destroy_state(em_state* state);
 
 void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...);
 size_t code_sizeof(char code);
@@ -72,14 +86,18 @@ em_type_definition* create_new_type(em_state* state);
 em_managed_ptr* create_managed_ptr(em_state* state);
 void free_managed_ptr(const char* code, int index, int len, em_state* state, em_managed_ptr* mptr);
 
-void* em_perma_alloc(size_t size);
+void* em_perma_alloc(em_state* state, size_t size);
 
 // Allocations that should not live forever that are temporary values
 // for parsing
-void* em_parser_alloc(size_t size);
-void em_parser_free(void* ptr);
+void* em_parser_alloc(em_state* state, size_t size);
+void em_parser_free(em_state* state, void* ptr);
 
 // Allocations that should NOT live forever
-void* em_usercode_alloc(size_t size);
-void em_usercode_free(void* ptr, size_t size);
+void* em_usercode_alloc(em_state* state, size_t size, bool bookkeep_as_overhead);
+void em_usercode_free(em_state* state, void* ptr, size_t size, bool bookkeep_as_overhead);
+
+// This is just for bookkeeping to say usercode now owns something originally owned
+// by the parser
+void em_transfer_alloc_parser_usercode(em_state* state, size_t size);
 
