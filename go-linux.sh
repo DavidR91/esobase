@@ -3,7 +3,7 @@ afl-clang-fast *.c -o eb-afl || exit 1
 
 passed=0
 
-for file in tests/*.{pass,fail}
+for file in tests/**/*.{pass,fail}
 do
     echo "********** $file **********"
    

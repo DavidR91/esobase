@@ -1,7 +1,7 @@
 passed=0
 
 # We only care about leaks from passing test cases
-for file in tests/*.pass
+for file in tests/**/*.pass
 do
     echo "********** $file **********"
    
