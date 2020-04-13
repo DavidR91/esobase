@@ -148,7 +148,16 @@ void dump_pointers(em_state* state) {
 
 void dump_stack(em_state* state) {
     fprintf(stdout, "=== Bottom of stack ===\n");
-    for (int i = 0; i <= state->stack_ptr; i++) {
+
+    int stack_start = 0;
+    int stack_end = state->stack_ptr;
+
+    if (stack_end > 32) {
+        stack_start = stack_end - 32;
+        fprintf(stdout, "[.... TRUNCATED ....]\n");
+    }
+
+    for (int i = stack_start; i <= stack_end; i++) {
         dump_stack_item(state, &state->stack[i], i - state->stack_ptr);
     }
     fprintf(stdout, "=== Top of stack ===\n");

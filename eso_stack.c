@@ -10,7 +10,13 @@
 
 // Note that this totally erases any content in the address 
 int stack_push(em_state* state) {
+
+    if ((state->stack_ptr + 1) >= state->stack_size) {
+        em_panic("(Source not available)", 0, 22, state, "Stack overflow (%d maximum of %d)", state->stack_ptr, state->stack_size);
+    }
+
     state->stack_ptr++;
+
     memset(&state->stack[state->stack_ptr], 0, sizeof(em_stack_item));
     log_verbose("Stack push result index = %d\n", state->stack_ptr);
     return state->stack_ptr;
@@ -102,7 +108,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             if (is_code_using_managed_memory(dup->code)) {
                 em_managed_ptr* reference = dup->u.v_mptr;
                 reference->references++;
-                
+
                 state->stack[ptr].u.v_mptr = reference;
                 state->stack[ptr].code = dup->code;
 

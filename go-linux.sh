@@ -1,4 +1,5 @@
 clang  -g *.c -o eb || exit 1
+afl-clang-fast *.c -o eb-afl || exit 1
 
 passed=0
 

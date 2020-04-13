@@ -57,7 +57,6 @@ void* em_usercode_alloc(em_state* state, size_t size, bool bookkeep_as_overhead)
 
             state->memory_usercode.allocated += size;
            
-
             if (state->memory_usercode.allocated > state->memory_usercode.peak_allocated) {
                 state->memory_usercode.peak_allocated = state->memory_usercode.allocated;
             }
@@ -113,12 +112,24 @@ void em_panic(const char* code, int index, int len, em_state* state, const char*
     vfprintf(stderr, format, argptr);
 
     fprintf(stderr, "\n\n");
-    dump_instructions(code, index, len, state);
+    
+    if (state != NULL) {
+        dump_instructions(code, index, len, state);
+    } else {
+        fprintf(stderr, "(No machine state and no instructions available)\n");
+    }
+
     fprintf(stderr, "%s", "\033[0m\n\n");
-    dump_stack(state);
+
+    if (state != NULL) {
+        dump_stack(state);
+    } else {
+        fprintf(stderr, "(No machine state and no stack available)\n");
+    }
+
     fprintf(stderr, "\n");
     va_end(argptr);
-    abort();
+    exit(1);
 }
 
 size_t code_sizeof(char code) {
@@ -140,7 +151,8 @@ size_t code_sizeof(char code) {
 
 char safe_get(const char* code, int index, int len) {
     if (index < 0 || index >= len) {
-        abort();
+        em_panic("(Source not available)", 0, 22, NULL, "Unexpectedly out of bounds safe-getting single character from index %d with code of length %d", index, len);
+        exit(1);
     }
 
     return code[index];
@@ -170,6 +182,11 @@ bool is_code_using_managed_memory(char code) {
 }
 
 em_type_definition* create_new_type(em_state* state) {
+
+   if ((state->type_ptr+1) >= state->max_types) {
+        em_panic("(Source not available)", 0, 22, state, "Type definition overflow (%d types defined maximum of %d)", state->type_ptr, state->max_types);
+    }
+
     state->type_ptr++;
     memset(&state->types[state->type_ptr], 0, sizeof(em_type_definition));
     return &state->types[state->type_ptr];

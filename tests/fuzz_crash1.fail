@@ -1,0 +1,36 @@
+ml
+4 2;
+
+mf
+@
+    ml
+    4 2;
+    mb +
+
+    # Duplicate the answer so it doesn't get eaten bydcompare
+    ms d
+
+    #s
+
+mf 
+<
+
+@
+# We sho Is it over 10?
+    ml
+    4 10;
+    mb >
+
+    # Break out if we're over 10
+    mf i > i
+
+    # (See our stack)
+    md s
+
+mf 
+<
+
+@
+# We should have 12
+ml 4 12;
+md a

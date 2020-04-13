@@ -1,4 +1,5 @@
 // TODO
+// Wrapping and unwrapping calls in and out of C
 // Padding for UDTs so they are compatible with C
 // callable functions (?)
 // Control flow breaks line number (loops)
@@ -102,6 +103,7 @@ void run(em_state* state, const char* code, int len) {
 
         if (code[i] == '\n') {
             state->file_line++;
+            log_verbose("LINE %d\n", state->file_line);
             continue;
         }
 
