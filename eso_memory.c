@@ -1,5 +1,6 @@
 #include "eso_vm.h"
 #include "eso_log.h"
+#include "eso_debug.h"
 #include "eso_parse.h"
 #include "eso_stack.h"
 #include "eso_log.h"
@@ -59,13 +60,10 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             return 0;
         }
 
-        // set
-        case 's': 
-        {
-
-            return 0;
-        }
-
+        // Leak check
+        case 'l': 
+        assert_no_leak(state);
+        return 0;
 
         default:
             em_panic(code, index, len, state, "Unknown memory instruction %c", current_code);

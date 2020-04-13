@@ -34,6 +34,8 @@ void assert_no_leak(em_state* state) {
         print_memory_use(state);
         exit(1);
     }
+
+    printf("Leak check: OK\n");
 }
 
 int run_debug(em_state* state, const char* code, int index, int len) {
@@ -140,26 +142,8 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
 }
 
 void dump_pointers(em_state* state) {
-    // for(int i = 0; i <= state->pointer_ptr; i++) {
-    //     em_managed_ptr* ptr = &state->pointers[i];
-
-    //     if (ptr->references <= 0)
-    //     {
-    //         printf("%2d) %p *** DEAD *** \n", i, ptr);
-    //     }
-    //     else {
-    //         printf("%2d) %p Alive (%d references)\n", i, ptr, ptr->references);
-    //     }
-
-    //     printf("\traw = %p size = %db\n", ptr->raw, ptr->size);
-    //     printf("\ttype = %p\n", ptr->concrete_type);
-
-    //     if (ptr->concrete_type != NULL) {
-    //         printf("\t\033[0;96m%s (%s)\033[0m size = %db\n", ptr->concrete_type->name, ptr->concrete_type->types, ptr->concrete_type->size);
-    //     }
-
-    //     printf("\n");
-    // }
+    
+    // TODO Reachability
 }
 
 void dump_stack(em_state* state) {

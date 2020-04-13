@@ -1,3 +1,7 @@
+#
+# Constantly set the same field to different strings and explicitly
+# check for no leaks if the object is popped off the stack
+#
 ml
 
 ############
@@ -24,4 +28,6 @@ ml s hello4!;
 mu s test_string;
 
 ms p
-md p
+
+# Explicit leak check
+mm l

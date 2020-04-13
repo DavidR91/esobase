@@ -1,10 +1,10 @@
 // TODO
+// Padding for UDTs so they are compatible with C
+// callable functions (?)
 // Control flow breaks line number (loops)
 // Control flow should not seek to comments or the same symbol when set
-// Padding for UDTs so they are compatible with C
-// Not leaking everywhere
-// callable functions (?)
 // Signed is broken (unsigned everywhere)
+// Fix perma allocs so they are freeable before exit
 
 #include <stdlib.h>
 #include <string.h>
