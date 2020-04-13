@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <stddef.h>
 
 typedef enum {
     EM_BOOLEAN,
