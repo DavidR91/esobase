@@ -162,7 +162,6 @@ int run_stack(em_state* state, const char* code, int index, int len) {
                 em_managed_ptr* reference = to_copy->u.v_mptr;
                 reference->references++;
 
-                int ptr = stack_push(state);
                 state->stack[ptr].u.v_mptr = reference;
                 state->stack[ptr].code = to_copy->code;
 

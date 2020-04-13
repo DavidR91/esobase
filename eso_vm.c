@@ -101,6 +101,10 @@ void* em_parser_alloc(em_state* state, size_t size) {
 void em_transfer_alloc_parser_usercode(em_state* state, size_t size) {
     state->memory_parser.allocated -= size;
     state->memory_usercode.allocated += size;
+
+     if (state->memory_usercode.allocated > state->memory_usercode.peak_allocated) {
+        state->memory_usercode.peak_allocated = state->memory_usercode.allocated;
+    }
 }
 
 void em_parser_free(em_state* state, void* ptr) {
