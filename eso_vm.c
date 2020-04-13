@@ -26,6 +26,8 @@ em_state* create_state(const char* filename) {
     state->max_types = 255;
     state->types = em_perma_alloc(state, sizeof(em_type_definition) * state->max_types);
     memset(state->types, 0, sizeof(em_type_definition) * state->max_types);
+
+    state->mode = EM_MEMORY;
     return state;
 }
 
@@ -220,8 +222,17 @@ void free_managed_ptr(const char* code, int index, int len, em_state* state, em_
             for(int field = 0; field < strlen(mptr->concrete_type->types); field++) {
 
                 if (is_code_using_managed_memory(mptr->concrete_type->types[field])) {
-                    log_verbose("Freeing field %s of %s\n", mptr->concrete_type->field_names[field], mptr->concrete_type->name);
-                    free_managed_ptr(code, index, len, state, *(em_managed_ptr**)(mptr->raw + field_bytes_start));
+                    log_verbose("Freeing field %s of %s (%p +%db)\n", mptr->concrete_type->field_names[field], mptr->concrete_type->name, mptr->raw, field_bytes_start);
+
+                    em_managed_ptr* to_free = *(em_managed_ptr**)(mptr->raw + field_bytes_start);
+
+                    log_verbose("Resolves to %p\n", to_free);
+
+                    if (to_free == NULL) {
+                        log_verbose("Resolved to NULL: Not initialized nothing to free\n", to_free);
+                    } else {
+                        free_managed_ptr(code, index, len, state, to_free);
+                    }
                 }
 
                 field_bytes_start += code_sizeof(mptr->concrete_type->types[field]);

@@ -71,6 +71,8 @@ typedef struct {
     em_memory_use memory_permanent;
     em_memory_use memory_usercode;
     em_memory_use memory_parser;
+
+    ESOMODE mode;
 } em_state;
 
 em_state* create_state();

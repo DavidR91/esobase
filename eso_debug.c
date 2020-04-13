@@ -39,6 +39,66 @@ void assert_no_leak(em_state* state) {
     log_printf("Leak check: OK\n");
 }
 
+void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
+    int field_bytes_start = 0;
+
+    if (tab_start > 0) {
+        log_printf("+");
+    } else {
+        log_printf("|");
+    }
+
+    if (ptr->concrete_type == NULL) {
+
+        for (int t = 0; t < tab_start*6; t++) {
+            log_printf("-");
+        }
+
+        log_printf(" (No type) %p (%db) refcount %d\n", 
+            ptr->raw,
+            ptr->size, 
+            ptr->references);
+
+    } else {
+
+        for (int t = 0; t < tab_start*6; t++) {
+            log_printf("-");
+        }
+
+        log_printf("\033[0;96m %s (%db) refcount %d\t(%p)\033[0;0m\n", 
+            ptr->concrete_type->name, 
+            ptr->size, 
+            ptr->references,
+            ptr->raw);
+
+        for(int field = 0; field < strlen(ptr->concrete_type->types); field++) {
+
+            for (int t = 0; t < tab_start*6; t++) {
+                log_printf("-");
+            }
+
+            log_printf("%s|-- (%c) [+%-3db] %s\033[0m\n", code_colour_code(ptr->concrete_type->types[field]), ptr->concrete_type->types[field], field_bytes_start, ptr->concrete_type->field_names[field]);
+        
+            if (is_code_using_managed_memory(ptr->concrete_type->types[field])) {
+                em_managed_ptr** field_value = (em_managed_ptr**)(ptr->raw + field_bytes_start);
+
+                if (*field_value == NULL) {
+                    for (int t = 0; t < (tab_start + 1) *6; t++) {
+                        log_printf("-");
+                    }
+
+                    log_printf("\033[0;31m UNINITIALIZED\033[0m\n");
+        
+                } else {
+                    inspect_pointer(*field_value, tab_start+1);
+                }
+            }
+
+            field_bytes_start += code_sizeof(ptr->concrete_type->types[field]);
+        }
+    }
+}
+
 int run_debug(em_state* state, const char* code, int index, int len) {
 
     char current_code = tolower(code[index]);
@@ -65,6 +125,20 @@ int run_debug(em_state* state, const char* code, int index, int len) {
 
         case 'r': 
         print_memory_use(state);
+        break;
+
+        // Inspect stack top
+        case 'i':
+        {
+            em_stack_item* top = stack_top(state);
+
+            if (top == NULL || !is_code_using_managed_memory(top->code)) {
+                log_printf("Ignoring debug inspect request: Requires type of u, s or * on stack top\n");
+                return 0;
+            }
+
+            inspect_pointer(top->u.v_mptr, 0);
+        }
         break;
 
         // Assert line
@@ -116,10 +190,6 @@ int run_debug(em_state* state, const char* code, int index, int len) {
         }
         break;
 
-        case 'p':
-        dump_pointers(state);
-        return 0;
-
         default:
             em_panic(code, index, len, state, "Unknown debug instruction %c", current_code);
             return 0;
@@ -128,7 +198,6 @@ int run_debug(em_state* state, const char* code, int index, int len) {
 
     return 0;
 }
-
 
 void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
 
@@ -155,18 +224,17 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
             // Find relevant type
             em_type_definition* type = item->u.v_mptr->concrete_type;
 
-            log_printf( "%s (%db) references %d", type->name, item->u.v_mptr->size, item->u.v_mptr->references);
+            log_printf( "%s (%db) references %d\n", type->name, item->u.v_mptr->size, item->u.v_mptr->references);
+
+            for(int field = 0; field < strlen(type->types); field++) {
+                log_printf("%s\t\t\t |-- (%c) %s\033[0m\n", code_colour_code(type->types[field]), type->types[field], type->field_names[field]);
+            }
         }
         break;
     }
 
     log_printf( "%s", reset_colour);
     log_printf( "\n");
-}
-
-void dump_pointers(em_state* state) {
-    
-    // TODO Reachability
 }
 
 void dump_stack(em_state* state) {

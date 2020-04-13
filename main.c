@@ -1,5 +1,5 @@
 // TODO
-// UDT view
+// Nested UDTs
 // Wrapping and unwrapping calls in and out of C
 // Padding for UDTs so they are compatible with C
 // callable functions (?)
@@ -33,7 +33,21 @@ void run(em_state* state, const char* i, int len);
 int main(int argc, char** argv) {
 
     if (argc < 2) {
-        log_printf( "At least one argument required\n");
+        log_printf("REPL mode\n");
+
+        char* line = NULL;
+        size_t unhelpful_junk = 0;
+        size_t line_len = 0;
+
+        em_state* state = create_state("stdin");
+
+        log_printf(">> ");
+
+        while((line_len = getline(&line, &unhelpful_junk, stdin)) != -1) {
+            run(state, line, line_len);
+            log_printf("\n>> ");
+        }
+
         exit(0);
     }
 
@@ -80,8 +94,6 @@ void run(em_state* state, const char* code, int len) {
 
     bool premature_exit = false;
 
-    ESOMODE mode = EM_MEMORY;
-
     for (int i = 0; i < len; i++) {
 
         if (premature_exit) {
@@ -119,14 +131,14 @@ void run(em_state* state, const char* code, int len) {
                 log_ingestion(new_mode);
 
                 switch(tolower(new_mode)) {
-                    case 'b': mode = EM_BOOLEAN; break;
-                    case 'm': mode = EM_MEMORY; break;
-                    case 'l': mode = EM_LITERAL; break;
-                    case 's': mode = EM_STACK; break;
-                    case 'c': mode = EM_CC; break;
-                    case 'd': mode = EM_DEBUG; break;
-                    case 'u': mode = EM_UDT; break;
-                    case 'f': mode = EM_CONTROL_FLOW; break;
+                    case 'b': state->mode = EM_BOOLEAN; break;
+                    case 'm': state->mode = EM_MEMORY; break;
+                    case 'l': state->mode = EM_LITERAL; break;
+                    case 's': state->mode = EM_STACK; break;
+                    case 'c': state->mode = EM_CC; break;
+                    case 'd': state->mode = EM_DEBUG; break;
+                    case 'u': state->mode = EM_UDT; break;
+                    case 'f': state->mode = EM_CONTROL_FLOW; break;
                 default:
                     em_panic(code, i, len, state, "Unknown mode change '%c'\n", new_mode);
                     break;
@@ -144,7 +156,7 @@ void run(em_state* state, const char* code, int len) {
                 int skip = 0;
 
                 // Allow modes to eat text
-                switch(mode) {
+                switch(state->mode) {
                     case EM_MEMORY: skip = run_memory(state, code, i, len); break;
                     case EM_LITERAL: skip = run_literal(state, code, i, len); break;
                     case EM_STACK: skip = run_stack(state, code, i, len); break;

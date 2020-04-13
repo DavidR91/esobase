@@ -40,6 +40,7 @@ c test_type;
 # Verify it's on stack and show available types
 md 
 s
+i
 u
 
 # Now we're going to set get and compare each field in turn
@@ -118,6 +119,6 @@ mu
 g test_string;
 
 ml s eggo world!;
-md psa
+md sa
 
 ms p
