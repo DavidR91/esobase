@@ -97,7 +97,18 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             }
 
             int ptr = stack_push(state);
-            memcpy(&state->stack[ptr], dup, sizeof(em_stack_item));
+
+            // If it's a managed memory object just create a reference
+            if (is_code_using_managed_memory(dup->code)) {
+                em_managed_ptr* reference = dup->u.v_mptr;
+                reference->references++;
+                
+                state->stack[ptr].u.v_mptr = reference;
+                state->stack[ptr].code = dup->code;
+
+            } else {
+                memcpy(&state->stack[ptr], dup, sizeof(em_stack_item));
+            }
         }
         break;
 
@@ -138,7 +149,19 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             stack_pop(state);
 
             int ptr = stack_push(state);
-            memcpy(&state->stack[ptr], to_copy, sizeof(em_stack_item));
+
+            // Copy is a reference 
+            if (is_code_using_managed_memory(to_copy->code)) {
+                em_managed_ptr* reference = to_copy->u.v_mptr;
+                reference->references++;
+
+                int ptr = stack_push(state);
+                state->stack[ptr].u.v_mptr = reference;
+                state->stack[ptr].code = to_copy->code;
+
+            } else {
+                memcpy(&state->stack[ptr], to_copy, sizeof(em_stack_item));
+            }
         }
         break;
     }

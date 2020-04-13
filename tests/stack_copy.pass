@@ -44,3 +44,58 @@ a
 a
 a
 a
+
+
+####################################################################
+####################################################################
+#
+# UDT duplication (references)
+
+ml
+
+############
+    s id;
+    s;
+############
+
+4 1;
+s to_be_copied;
+mu d
+c to_be_copied;
+
+# Set a GUID into the fil
+ml s b645c705-9931-40a7-ba48-2ef50c1c18bc;
+mu 
+s id;
+
+ms dddd
+
+# We should now have 5 copies of this object (or references to it)
+mu g id;
+ml s b645c705-9931-40a7-ba48-2ef50c1c18bc;
+md a # ID should match
+ms p
+
+mu g id;
+ml s b645c705-9931-40a7-ba48-2ef50c1c18bc;
+md a
+ms p
+
+mu g id;
+ml s b645c705-9931-40a7-ba48-2ef50c1c18bc;
+md a
+ms p
+
+mu g id;
+ml s b645c705-9931-40a7-ba48-2ef50c1c18bc;
+md a
+ms p
+
+mu g id;
+ml s b645c705-9931-40a7-ba48-2ef50c1c18bc;
+md a
+ms p
+
+md s
+
+
