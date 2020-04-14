@@ -1,5 +1,6 @@
 ml
 
+#Level 3 struct
 s timer_2;
 4;
 s tick_2;
@@ -10,6 +11,7 @@ s;
 s time_t_n;
 mu d
 
+#Level 2 struct
 ml
 s timer;
 4;
@@ -24,6 +26,7 @@ ml
 s time_t;
 mu d
 
+#Level 1 struct
 ml
 s time;
 mu c time_t;
@@ -45,9 +48,17 @@ mu
 s inner;
 s time;
 
-md i
-
 mu
+
+g time;
+g inner;
+g time_locale_2;
+
+ml 2 2;
+ms q
+mu
+
+ml 2 2; ms c mu
 
 g time;
 g inner;
@@ -55,6 +66,21 @@ g time_locale_2;
 
 md s
 
-i
-r
-ms p
+ml 2 3;
+ms q
+md s
+mu
+ml 2 3; ms c mu
+
+g time;
+g inner;
+
+ml s eggs!;
+mu
+s time_locale_2;
+g time_locale_2;
+ml 2 3;
+ms q
+md s
+md i
+ms pppp

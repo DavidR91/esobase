@@ -43,6 +43,44 @@ em_stack_item* stack_pop(em_state* state) {
     }
 }
 
+em_stack_item* stack_pop_preserve_top(em_state* state, int count) {
+    if (state->stack_ptr < 0) {
+        return NULL;
+    } else {
+        int original_stack_ptr = state->stack_ptr;
+        em_stack_item* top = &state->stack[original_stack_ptr];
+
+        int ptr = state->stack_ptr - 1;
+        int popped = 0;
+
+        while (ptr >= 0 && popped < count) {
+
+            em_stack_item* popping = &state->stack[ptr];
+
+            if (is_code_using_managed_memory(popping->code)) {
+
+                log_verbose("Stack pop %d is \033[0;31mremoving reference to managed memory\033[0;0m\n", ptr);
+            
+                free_managed_ptr("(Source not available)", 0, 22, state, popping->u.v_mptr);
+            }
+
+            memset(&state->stack[ptr], 0, sizeof(em_stack_item));
+
+            ptr--;
+            popped++;
+        }
+
+        state->stack_ptr = ptr + 1;
+        memcpy(&state->stack[state->stack_ptr], &state->stack[original_stack_ptr], sizeof(em_stack_item));
+
+        // Ensure old stack data doesn't hang around
+        memset(&state->stack[original_stack_ptr], 0, sizeof(em_stack_item));
+            
+        return top;
+    }
+}
+
+
 em_stack_item* stack_top_minus(em_state* state, int minus) {
     if (state->stack_ptr - minus < 0) {
         return NULL;
@@ -170,6 +208,41 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             }
         }
         break;
+
+        case 'q': 
+        {
+            // We need an offset at the top of the stack
+            em_stack_item* offset = stack_top(state);
+
+            if (offset == NULL) {
+                em_panic(code, index, len, state, "Cannot pop beneath top: Need number at stack top");
+            }
+
+            if (!is_code_numeric(offset->code)) {
+                em_panic(code, index, len, state, "Cannot pop beneath top: Item at stack top must be of numeric type");
+            }
+
+            uint32_t quantity = 0; 
+
+            switch(offset->code) {
+                case '1': quantity = offset->u.v_byte; break;
+                case '2': quantity = offset->u.v_int16; break;
+                case '4': quantity = offset->u.v_int32; break;
+                case '8': quantity = offset->u.v_int64; break;
+                default: 
+                    em_panic(code, index, len, state, "Unhandled type %c in determining stack pop quantity", offset->code);
+                break;
+            }
+
+            stack_pop(state);
+
+            stack_pop_preserve_top(state, quantity);
+        }
+        break;
+
+        default:
+            em_panic(code, index, len, state, "Unknown stack instruction %c", current_code);
+            return 0;
     }
 
     return 0;
