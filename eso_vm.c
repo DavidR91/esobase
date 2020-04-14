@@ -150,6 +150,28 @@ size_t code_sizeof(char code) {
         case 's': return sizeof(em_managed_ptr*); break;
         case '*': return sizeof(void*); break;
         case '^': return sizeof(void*); break;
+
+        case 'u': return sizeof(em_managed_ptr*); break;
+        // {
+        //     if (user_type->concrete_type == NULL) {
+        //         return user_type->size;
+        //     } else {
+        //         size_t total_size = 0;
+
+        //         for(int i = 0; i < strlen(user_type->concrete_type->types); i++) {
+        //             if (is_code_using_managed_memory(user_type->concrete_type->types[i])) {
+        //                 em_managed_ptr* to_sum = *(em_managed_ptr**)(user_type->raw + total_size);                   
+        //                 total_size += code_sizeof(user_type->concrete_type->types[i], to_sum);
+        //             } else {
+        //                 total_size += code_sizeof(user_type->concrete_type->types[i], NULL);
+        //             }
+        //         }
+
+        //         return total_size
+        //     }
+        // }
+        // break;
+
     }
     return 0;
 }

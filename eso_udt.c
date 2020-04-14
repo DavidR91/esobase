@@ -152,6 +152,8 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                     state->stack[top].code = field_code;
                 }
                 break;
+                
+                case 'u':
                 case 's': 
                 {
                     em_managed_ptr* inside_type = *(em_managed_ptr**)(of_type->u.v_mptr->raw + field_bytes_start);
@@ -246,6 +248,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 break;
 
                 case 's':
+                case 'u':
                 {
                     em_managed_ptr** field_value = (em_managed_ptr**)(of_type->u.v_mptr->raw + field_bytes_start);
 

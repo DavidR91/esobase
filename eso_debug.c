@@ -42,30 +42,24 @@ void assert_no_leak(em_state* state) {
 void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
     int field_bytes_start = 0;
 
-    if (tab_start > 0) {
-        log_printf("+");
-    } else {
-        log_printf("|");
-    }
-
     if (ptr->concrete_type == NULL) {
 
-        for (int t = 0; t < tab_start*6; t++) {
-            log_printf("-");
+        for (int t = 0; t < tab_start; t++) {
+            log_printf("\t");
         }
 
-        log_printf(" (No type) %p (%db) refcount %d\n", 
+        log_printf("> (No type) %p (%db) refcount %d\n", 
             ptr->raw,
             ptr->size, 
             ptr->references);
 
     } else {
 
-        for (int t = 0; t < tab_start*6; t++) {
-            log_printf("-");
+        for (int t = 0; t < tab_start; t++) {
+            log_printf("\t");
         }
 
-        log_printf("\033[0;96m %s (%db) refcount %d\t(%p)\033[0;0m\n", 
+        log_printf("\033[0;96m> %s (%db) refcount %d\t(%p)\033[0;0m\n", 
             ptr->concrete_type->name, 
             ptr->size, 
             ptr->references,
@@ -73,8 +67,8 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
 
         for(int field = 0; field < strlen(ptr->concrete_type->types); field++) {
 
-            for (int t = 0; t < tab_start*6; t++) {
-                log_printf("-");
+            for (int t = 0; t < tab_start; t++) {
+                log_printf("\t");
             }
 
             log_printf("%s|-- (%c) [+%-3db] %s\033[0m\n", code_colour_code(ptr->concrete_type->types[field]), ptr->concrete_type->types[field], field_bytes_start, ptr->concrete_type->field_names[field]);
@@ -83,8 +77,8 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
                 em_managed_ptr** field_value = (em_managed_ptr**)(ptr->raw + field_bytes_start);
 
                 if (*field_value == NULL) {
-                    for (int t = 0; t < (tab_start + 1) *6; t++) {
-                        log_printf("-");
+                    for (int t = 0; t < (tab_start + 1); t++) {
+                        log_printf("\t");
                     }
 
                     log_printf("\033[0;31m UNINITIALIZED\033[0m\n");
@@ -96,6 +90,7 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
 
             field_bytes_start += code_sizeof(ptr->concrete_type->types[field]);
         }
+
     }
 }
 
