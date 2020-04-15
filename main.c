@@ -1,6 +1,5 @@
 // TODO
 // Wrapping and unwrapping calls in and out of C
-// Padding for UDTs so they are compatible with C
 // How to unwrap c strings out ahead of c calls?
 // callable functions (?)
 // Control flow should not seek to comments or the same symbol when set
