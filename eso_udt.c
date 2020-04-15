@@ -2,6 +2,7 @@
 #include "eso_log.h"
 #include "eso_parse.h"
 #include "eso_stack.h"
+#include "eso_align.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -91,11 +92,10 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 field_size = code_sizeof(field_code);
 
                 if (strcmp(definition->field_names[i], name) == 0) {
+                    field_bytes_start = definition->start_offset_bytes[i];
                     found_field = true;
                     break;
-                }
-
-                field_bytes_start += code_sizeof(field_code);
+                }                
             }
 
             if (!found_field) {
@@ -152,7 +152,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                     state->stack[top].code = field_code;
                 }
                 break;
-                
+
                 case 'u':
                 case 's': 
                 {
@@ -206,11 +206,10 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 field_size = code_sizeof(field_code);
 
                 if (strcmp(definition->field_names[i], name) == 0) {
-                    found_field = true;
+                    found_field = true;                    
+                    field_bytes_start = definition->start_offset_bytes[i];
                     break;
                 }
-
-                field_bytes_start += code_sizeof(field_code);
             }
 
             if (!found_field) {
@@ -290,6 +289,8 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 em_panic(code, index, len, state, "Not allowed to declare type %s with no fields", name->u.v_mptr->raw);
             }
 
+            uint32_t aligned_size = calculate_aligned_struct_size(state, field_qty);
+
             // Currently assuming types live forever
             //
             em_type_definition* new_type = create_new_type(state);
@@ -302,14 +303,19 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             new_type->types = em_perma_alloc(state, field_qty->u.v_int32 + 1);
             memset(new_type->types, 0, field_qty->u.v_int32 + 1);
 
-            new_type->field_names = em_perma_alloc(state, sizeof(char*) * field_qty->u.v_int32);
-            memset(new_type->field_names, 0, sizeof(char*) * field_qty->u.v_int32);
+            new_type->start_offset_bytes = em_perma_alloc(state, sizeof(uint32_t) * field_qty->u.v_int32);
+            memset(new_type->start_offset_bytes, 0, sizeof(uint32_t) * field_qty->u.v_int32);
+
+            new_type->field_names = em_perma_alloc(state, sizeof(char*) * (field_qty->u.v_int32));
+            memset(new_type->field_names, 0, sizeof(char*) * (field_qty->u.v_int32));
 
             // We need a TYPE and NAME for each field
             int minus = 1 + (field_qty->u.v_int32 * 2);
 
             // Where we write the type code per field
             int type_code_ptr = 0;
+
+            uint32_t byte_start = 0;
 
             for (int field = 1; field <= field_qty->u.v_int32; field++) {
                 em_stack_item* field_name = stack_top_minus(state, minus);
@@ -332,15 +338,20 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                     em_panic(code, index, len, state, "Expected an item of any type at stack top - %d to define the type of field %d of %s", minus, field, field_name_copy);
                 }
 
+                uint32_t naive_size = code_sizeof(field_type->code);
+                uint32_t padding_required = calculate_padding(field_type->code, byte_start);
+
+                new_type->start_offset_bytes[field-1] = byte_start + padding_required;
+
                 new_type->types[type_code_ptr] = field_type->code;
+
                 type_code_ptr++;
                 minus--;
+
+                byte_start += (naive_size + padding_required);
             }
 
-            // Calculate total size 
-            for(int i = 0; i < field_qty->u.v_int32; i++) {
-                new_type->size += code_sizeof(new_type->types[i]);
-            }
+            new_type->size = aligned_size;
 
             for(int q = 1; q <= 2 + (field_qty->u.v_int32 * 2); q++) {
                 stack_pop(state);

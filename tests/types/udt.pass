@@ -13,6 +13,9 @@ ml
     s test_int32;
     4;
 
+     s test_byt2;
+    1;
+
     s test_int64;
     8;
 
@@ -27,7 +30,7 @@ ml
 
 ############
 
-4 8;
+4 9;
 s test_type;
 
 

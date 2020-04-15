@@ -150,27 +150,7 @@ size_t code_sizeof(char code) {
         case 's': return sizeof(em_managed_ptr*); break;
         case '*': return sizeof(void*); break;
         case '^': return sizeof(void*); break;
-
         case 'u': return sizeof(em_managed_ptr*); break;
-        // {
-        //     if (user_type->concrete_type == NULL) {
-        //         return user_type->size;
-        //     } else {
-        //         size_t total_size = 0;
-
-        //         for(int i = 0; i < strlen(user_type->concrete_type->types); i++) {
-        //             if (is_code_using_managed_memory(user_type->concrete_type->types[i])) {
-        //                 em_managed_ptr* to_sum = *(em_managed_ptr**)(user_type->raw + total_size);                   
-        //                 total_size += code_sizeof(user_type->concrete_type->types[i], to_sum);
-        //             } else {
-        //                 total_size += code_sizeof(user_type->concrete_type->types[i], NULL);
-        //             }
-        //         }
-
-        //         return total_size
-        //     }
-        // }
-        // break;
 
     }
     return 0;
@@ -243,14 +223,12 @@ void free_managed_ptr(const char* code, int index, int len, em_state* state, em_
         if (mptr->concrete_type != NULL) {
             log_verbose("Need to free fields of concrete type %s\n", mptr->concrete_type->name);
 
-            int field_bytes_start = 0;
-
             for(int field = 0; field < strlen(mptr->concrete_type->types); field++) {
 
                 if (is_code_using_managed_memory(mptr->concrete_type->types[field])) {
-                    log_verbose("Freeing field %s of %s (%p +%db)\n", mptr->concrete_type->field_names[field], mptr->concrete_type->name, mptr->raw, field_bytes_start);
+                    log_verbose("Freeing field %s of %s (%p +%db)\n", mptr->concrete_type->field_names[field], mptr->concrete_type->name, mptr->raw, mptr->concrete_type->start_offset_bytes[field]);
 
-                    em_managed_ptr* to_free = *(em_managed_ptr**)(mptr->raw + field_bytes_start);
+                    em_managed_ptr* to_free = *(em_managed_ptr**)(mptr->raw + mptr->concrete_type->start_offset_bytes[field]);
 
                     log_verbose("Resolves to %p\n", to_free);
 
@@ -260,8 +238,6 @@ void free_managed_ptr(const char* code, int index, int len, em_state* state, em_
                         free_managed_ptr(code, index, len, state, to_free);
                     }
                 }
-
-                field_bytes_start += code_sizeof(mptr->concrete_type->types[field]);
             }
         }
 

@@ -20,6 +20,7 @@ typedef struct {
     char* name;
     char* types;
     char** field_names;
+    int* start_offset_bytes;
     int size; // total size in bytes of the fields inside
 } em_type_definition;
 

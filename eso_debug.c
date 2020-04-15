@@ -40,8 +40,6 @@ void assert_no_leak(em_state* state) {
 }
 
 void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
-    int field_bytes_start = 0;
-
     if (ptr->concrete_type == NULL) {
 
         for (int t = 0; t < tab_start; t++) {
@@ -71,10 +69,14 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
                 log_printf("\t");
             }
 
-            log_printf("%s|-- (%c) [+%-3db] %s\033[0m\n", code_colour_code(ptr->concrete_type->types[field]), ptr->concrete_type->types[field], field_bytes_start, ptr->concrete_type->field_names[field]);
+            log_printf("%s|-- (%c) [+%-3db] %s\033[0m\n", code_colour_code(
+                 ptr->concrete_type->types[field]),
+                 ptr->concrete_type->types[field], 
+                 ptr->concrete_type->start_offset_bytes[field], 
+                 ptr->concrete_type->field_names[field]);
         
             if (is_code_using_managed_memory(ptr->concrete_type->types[field])) {
-                em_managed_ptr** field_value = (em_managed_ptr**)(ptr->raw + field_bytes_start);
+                em_managed_ptr** field_value = (em_managed_ptr**)(ptr->raw + ptr->concrete_type->start_offset_bytes[field]);
 
                 if (*field_value == NULL) {
                     for (int t = 0; t < (tab_start + 1); t++) {
@@ -87,8 +89,6 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
                     inspect_pointer(*field_value, tab_start+1);
                 }
             }
-
-            field_bytes_start += code_sizeof(ptr->concrete_type->types[field]);
         }
 
     }
