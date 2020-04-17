@@ -1,0 +1,6 @@
+ml
+
+s Hello, world!\n;
+
+mc
+c stdio.prints;

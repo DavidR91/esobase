@@ -56,7 +56,10 @@ typedef struct {
 
 } em_memory_use;
 
-typedef struct {
+struct t_em_c_binding;
+typedef struct t_em_c_binding em_c_binding;
+
+typedef struct em_state_forward {
     em_type_definition* types;
     int type_ptr;
     int max_types;
@@ -69,12 +72,25 @@ typedef struct {
     bool control_flow_if_flag;
     uint8_t control_flow_token;
 
+    em_c_binding* c_bindings;
+    int max_c_bindings;
+    int c_binding_ptr;
+
     em_memory_use memory_permanent;
     em_memory_use memory_usercode;
     em_memory_use memory_parser;
 
     ESOMODE mode;
 } em_state;
+
+typedef void (*em_c_call) (em_state* state);
+
+struct t_em_c_binding {
+
+    char* name;
+    em_c_call bound;
+
+};
 
 em_state* create_state();
 void destroy_state(em_state* state);
@@ -107,3 +123,4 @@ void em_transfer_alloc_parser_usercode(em_state* state, size_t size);
 uint32_t calculate_file_line(em_state* state, const char* code, int index, int len);
 uint32_t calculate_file_column(em_state* state, const char* code, int index, int len);
 
+void em_bind_c_call(em_state* state, char* name, em_c_call call);

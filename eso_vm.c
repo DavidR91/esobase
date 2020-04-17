@@ -8,6 +8,7 @@
 #include "eso_vm.h"
 #include "eso_log.h"
 #include "eso_debug.h"
+#include "em_c_bindings.h"
 
 em_state* create_state(const char* filename) {
 
@@ -27,7 +28,15 @@ em_state* create_state(const char* filename) {
     state->types = em_perma_alloc(state, sizeof(em_type_definition) * state->max_types);
     memset(state->types, 0, sizeof(em_type_definition) * state->max_types);
 
+    state->c_binding_ptr = -1;
+    state->max_c_bindings = 128;
+    state->c_bindings = em_perma_alloc(state, sizeof(em_c_binding) * state->max_c_bindings);
+    memset(state->c_bindings, 0, sizeof(em_c_binding) * state->max_c_bindings);
+
     state->mode = EM_MEMORY;
+
+    em_bind_c_default(state);
+
     return state;
 }
 
@@ -267,4 +276,18 @@ uint32_t calculate_file_column(em_state* state, const char* code, int index, int
         }
     }
     return column;
+}
+
+void em_bind_c_call(em_state* state, char* name, em_c_call call) {
+     state->c_binding_ptr++;
+
+     em_c_binding* bind = &state->c_bindings[state->c_binding_ptr];
+
+     bind->name = em_perma_alloc(state, strlen(name) + 1);
+     memset(bind->name, 0, strlen(name) + 1);
+     memcpy(bind->name, name, strlen(name));
+
+     bind->bound = call;
+
+     log_verbose("Bound C method '%s' @ %p\n", bind->name, call);
 }

@@ -1,5 +1,7 @@
 // TODO
-// Wrapping and unwrapping calls in and out of C
+// When inspecting types show a byte map including padding
+// Better error handling esp. inside of C calls
+// Newline and escape processing
 // How to unwrap c strings out ahead of c calls?
 // callable functions (?)
 // Control flow should not seek to comments or the same symbol when set
@@ -25,6 +27,7 @@
 #include "eso_memory.h"
 #include "eso_debug.h"
 #include "eso_controlflow.h"
+#include "eso_c.h"
 
 void run_file(const char* file);
 void run(em_state* state, const char* i, int len);
@@ -159,7 +162,7 @@ void run(em_state* state, const char* code, int len) {
                     case EM_MEMORY: skip = run_memory(state, code, i, len); break;
                     case EM_LITERAL: skip = run_literal(state, code, i, len); break;
                     case EM_STACK: skip = run_stack(state, code, i, len); break;
-                    case EM_CC: break;
+                    case EM_CC: skip = run_c(state, code, i, len); break;
                     case EM_DEBUG: skip = run_debug(state, code, i, len); break;
                     case EM_BOOLEAN: skip = run_boolean(state, code, i, len); break;
                     case EM_UDT: skip = run_udt(state, code, i, len); break;
