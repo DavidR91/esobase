@@ -81,6 +81,11 @@ typedef struct em_state_forward {
     em_memory_use memory_parser;
 
     ESOMODE mode;
+
+    const char* code; 
+    int len;
+    int index;
+
 } em_state;
 
 typedef void (*em_c_call) (em_state* state);
@@ -95,7 +100,7 @@ struct t_em_c_binding {
 em_state* create_state();
 void destroy_state(em_state* state);
 
-void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...);
+void em_panic(em_state* state, const char* format, ...);
 size_t code_sizeof(char code);
 bool is_code_numeric(char code);
 bool is_code_using_managed_memory(char code);
@@ -103,7 +108,7 @@ char safe_get(const char* code, int index, int len);
 
 em_type_definition* create_new_type(em_state* state);
 em_managed_ptr* create_managed_ptr(em_state* state);
-void free_managed_ptr(const char* code, int index, int len, em_state* state, em_managed_ptr* mptr);
+void free_managed_ptr(em_state* state, em_managed_ptr* mptr);
 
 void* em_perma_alloc(em_state* state, size_t size);
 
@@ -120,7 +125,7 @@ void em_usercode_free(em_state* state, void* ptr, size_t size, bool bookkeep_as_
 // by the parser
 void em_transfer_alloc_parser_usercode(em_state* state, size_t size);
 
-uint32_t calculate_file_line(em_state* state, const char* code, int index, int len);
-uint32_t calculate_file_column(em_state* state, const char* code, int index, int len);
+uint32_t calculate_file_line(em_state* state);
+uint32_t calculate_file_column(em_state* state);
 
 void em_bind_c_call(em_state* state, char* name, em_c_call call);

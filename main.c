@@ -30,7 +30,7 @@
 #include "eso_c.h"
 
 void run_file(const char* file);
-void run(em_state* state, const char* i, int len);
+void run(em_state* state);
 
 int main(int argc, char** argv) {
 
@@ -46,7 +46,12 @@ int main(int argc, char** argv) {
         log_printf(">> ");
 
         while((line_len = getline(&line, &unhelpful_junk, stdin)) != -1) {
-            run(state, line, line_len);
+
+            state->code = line;
+            state->len = line_len;
+            state->index = 0;
+
+            run(state);
             log_printf("\n>> ");
         }
 
@@ -85,28 +90,33 @@ void run_file(const char* file) {
 
     file_content[length] = 0;   
 
-    run(state, file_content, strlen(file_content));
+    state->code = file_content;
+    state->len = strlen(file_content);
+
+    run(state);
 
     assert_no_leak(state);
 
     fclose(input);
 }
 
-void run(em_state* state, const char* code, int len) {
+void run(em_state* state) {
 
     bool premature_exit = false;
 
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < state->len; i++) {
+
+        state->index = i;
 
         if (premature_exit) {
             break;
         }
 
-        if (code[i] == '#') {
+        if (state->code[i] == '#') {
             log_verbose("Terminating at comment at index %d\n", i);
 
-            for(int current = i; current < len; current++) {
-                if (code[current] == '\n') {
+            for(int current = i; current < state->len; current++) {
+                if (state->code[current] == '\n') {
                     i = current - 1;
                     break;
                 }
@@ -115,19 +125,19 @@ void run(em_state* state, const char* code, int len) {
             continue;
         }
 
-        if (isspace(code[i]) || code[i] == '\r') {
+        if (isspace(state->code[i]) || state->code[i] == '\r') {
             continue;
         }
 
         // 'Free letters' i.e. top level mode changes
-        switch(tolower(code[i])) {
+        switch(tolower(state->code[i])) {
 
             // Change mode
             case 'm': {
 
-                log_ingestion(code[i]);
+                log_ingestion(state->code[i]);
 
-                char new_mode = safe_get(code, i+1, len);
+                char new_mode = safe_get(state->code, i+1, state->len);
                 state->last_mode_change = i;
 
                 log_ingestion(new_mode);
@@ -142,11 +152,11 @@ void run(em_state* state, const char* code, int len) {
                     case 'u': state->mode = EM_UDT; break;
                     case 'f': state->mode = EM_CONTROL_FLOW; break;
                 default:
-                    em_panic(code, i, len, state, "Unknown mode change '%c'\n", new_mode);
+                    em_panic(state, "Unknown mode change '%c'\n", new_mode);
                     break;
                 }
 
-                log_verbose("\033[0;31m%c %c\033[0;0m (Mode change)\n", code[i], new_mode);
+                log_verbose("\033[0;31m%c %c\033[0;0m (Mode change)\n", state->code[i], new_mode);
 
                 i++;
                 continue;
@@ -159,18 +169,18 @@ void run(em_state* state, const char* code, int len) {
 
                 // Allow modes to eat text
                 switch(state->mode) {
-                    case EM_MEMORY: skip = run_memory(state, code, i, len); break;
-                    case EM_LITERAL: skip = run_literal(state, code, i, len); break;
-                    case EM_STACK: skip = run_stack(state, code, i, len); break;
-                    case EM_CC: skip = run_c(state, code, i, len); break;
-                    case EM_DEBUG: skip = run_debug(state, code, i, len); break;
-                    case EM_BOOLEAN: skip = run_boolean(state, code, i, len); break;
-                    case EM_UDT: skip = run_udt(state, code, i, len); break;
+                    case EM_MEMORY: skip = run_memory(state); break;
+                    case EM_LITERAL: skip = run_literal(state); break;
+                    case EM_STACK: skip = run_stack(state); break;
+                    case EM_CC: skip = run_c(state); break;
+                    case EM_DEBUG: skip = run_debug(state); break;
+                    case EM_BOOLEAN: skip = run_boolean(state); break;
+                    case EM_UDT: skip = run_udt(state); break;
 
                     // Unlike other modes control flow directly sets where
                     // we resume from
                     case EM_CONTROL_FLOW: 
-                        i = run_control(state, code, i, len);
+                        i = run_control(state);
                         continue;
                 }
 

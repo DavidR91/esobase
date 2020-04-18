@@ -11,11 +11,11 @@
 #include <stdarg.h> 
 #include <stdbool.h>
 
-int run_udt(em_state* state, const char* code, int index, int len) {
+int run_udt(em_state* state) {
    
     int size_to_skip = 0;
 
-    char current_code = tolower(code[index]);
+    char current_code = tolower(state->code[state->index]);
 
     log_verbose("\033[0;31m%c\033[0;0m (UDT)\n", current_code);
     log_ingestion(current_code);
@@ -25,10 +25,10 @@ int run_udt(em_state* state, const char* code, int index, int len) {
         // Create
         case 'c':
         { 
-            char* name = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
+            char* name = alloc_until(state, state->code, state->index+1, state->len, ';', true, &size_to_skip);
 
             if (name == NULL) {
-                em_panic(code, index, len, state, "Could not find a complete name for creating type: Did you forget to terminate it?");
+                em_panic(state, "Could not find a complete name for creating type: Did you forget to terminate it?");
             }
 
             em_type_definition* definition = NULL;
@@ -41,7 +41,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             }
 
             if (definition == NULL) {
-                em_panic(code, index, len, state, "Could not find type '%s' to create", name);
+                em_panic(state, "Could not find type '%s' to create", name);
                 em_parser_free(state, name);
             }
 
@@ -66,17 +66,17 @@ int run_udt(em_state* state, const char* code, int index, int len) {
         // Get a field from a UDT and push it onto the stack
         case 'g':
         {
-            char* name = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
+            char* name = alloc_until(state, state->code, state->index+1, state->len, ';', true, &size_to_skip);
 
              if (name == NULL) {
-                 em_panic(code, index, len, state, "Could not find a complete name for a field to retrieve: Did you forget to terminate it?");
+                 em_panic(state, "Could not find a complete name for a field to retrieve: Did you forget to terminate it?");
              }
 
             // Object of type must be on stack top
             em_stack_item* of_type = stack_top(state);
 
             if (of_type == NULL || of_type->code != 'u') {
-                em_panic(code, index, len, state, "Expected a u at stack top to get field value from type");
+                em_panic(state, "Expected a u at stack top to get field value from type");
             }  
 
             em_type_definition* definition = of_type->u.v_mptr->concrete_type;
@@ -99,7 +99,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             }
 
             if (!found_field) {
-                em_panic(code, index, len, state, "No such field %s on type %s", name, definition->name);
+                em_panic(state, "No such field %s on type %s", name, definition->name);
             }
 
             switch(field_code) {
@@ -159,7 +159,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                     em_managed_ptr* inside_type = *(em_managed_ptr**)(of_type->u.v_mptr->raw + field_bytes_start);
 
                     if (inside_type == NULL) {
-                        em_panic(code, index, len, state, "Attempt to get uninitialized string field %s", name);
+                        em_panic(state, "Attempt to get uninitialized string field %s", name);
                     }
 
                     inside_type->references++;
@@ -170,7 +170,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 }
                 break;
                 default:
-                em_panic(code, index, len, state, "Getting field %s of type %c not currently supported", name, field_code);
+                em_panic(state, "Getting field %s of type %c not currently supported", name, field_code);
                 break;
             }
 
@@ -180,17 +180,17 @@ int run_udt(em_state* state, const char* code, int index, int len) {
         // Set a field in a UDT from the stack
         case 's':
         {
-            char* name = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
+            char* name = alloc_until(state, state->code, state->index+1, state->len, ';', true, &size_to_skip);
 
              if (name == NULL) {
-                 em_panic(code, index, len, state, "Could not find a complete name for a field to set: Did you forget to terminate it?");
+                 em_panic(state, "Could not find a complete name for a field to set: Did you forget to terminate it?");
              }
 
             // Object of type must be below value to set on stack
             em_stack_item* of_type = stack_top_minus(state, 1);
 
             if (of_type == NULL || of_type->code != 'u') {
-                em_panic(code, index, len, state, "Expected a u at stack top - 1 to set field value into type");
+                em_panic(state, "Expected a u at stack top - 1 to set field value into type");
             }  
 
             em_type_definition* definition = of_type->u.v_mptr->concrete_type;
@@ -213,14 +213,14 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             }
 
             if (!found_field) {
-                em_panic(code, index, len, state, "No such field %s on type %s", name, definition->name);
+                em_panic(state, "No such field %s on type %s", name, definition->name);
             }
 
             // Item on stack top must be the same type as the field we want to se
             em_stack_item* top = stack_top(state);
 
             if (top->code != field_code) {
-                em_panic(code, index, len, state, "Setting field %s requires a value of type %c on top of the stack", name, field_code);
+                em_panic(state, "Setting field %s requires a value of type %c on top of the stack", name, field_code);
             }  
 
             switch(top->code) {
@@ -253,7 +253,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
 
                     // If the field has a value, drop its references
                     if (*field_value != NULL) {
-                        free_managed_ptr(code, index, len, state, *field_value);
+                        free_managed_ptr(state, *field_value);
                     }
 
                     top->u.v_mptr->references++;
@@ -262,7 +262,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 break;
 
                 default: 
-                em_panic(code, index, len, state, "Setting field %s of type %c not currently supported", name, field_code);
+                em_panic(state, "Setting field %s of type %c not currently supported", name, field_code);
                 break;
             }
 
@@ -278,15 +278,15 @@ int run_udt(em_state* state, const char* code, int index, int len) {
             em_stack_item* field_qty = stack_top_minus(state, 1);
 
             if (name == NULL || name->code != 's') {
-                em_panic(code, index, len, state, "Expected an s at stack top to define the name of the type");
+                em_panic(state, "Expected an s at stack top to define the name of the type");
             }  
 
             if (field_qty == NULL || field_qty->code != '4') {
-                em_panic(code, index, len, state, "Expected a 4 at stack top - 1 to define the quantity of fields for the type");
+                em_panic(state, "Expected a 4 at stack top - 1 to define the quantity of fields for the type");
             }
 
             if (field_qty->u.v_int32 <= 0) {
-                em_panic(code, index, len, state, "Not allowed to declare type %s with no fields", name->u.v_mptr->raw);
+                em_panic(state, "Not allowed to declare type %s with no fields", name->u.v_mptr->raw);
             }
 
             uint32_t aligned_size = calculate_aligned_struct_size(state, field_qty);
@@ -321,7 +321,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 em_stack_item* field_name = stack_top_minus(state, minus);
 
                 if (field_name == NULL || field_name->code != 's') {
-                    em_panic(code, index, len, state, "Expected an s at stack top - %d to define the name of field %d of %s", minus, field, name->u.v_mptr->raw);
+                    em_panic(state, "Expected an s at stack top - %d to define the name of field %d of %s", minus, field, name->u.v_mptr->raw);
                 }
 
                 // Create a copy of each field name so it can't disappear
@@ -335,7 +335,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
                 em_stack_item* field_type = stack_top_minus(state, minus);
 
                 if (field_qty == NULL) {
-                    em_panic(code, index, len, state, "Expected an item of any type at stack top - %d to define the type of field %d of %s", minus, field, field_name_copy);
+                    em_panic(state, "Expected an item of any type at stack top - %d to define the type of field %d of %s", minus, field, field_name_copy);
                 }
 
                 uint32_t naive_size = code_sizeof(field_type->code);
@@ -361,7 +361,7 @@ int run_udt(em_state* state, const char* code, int index, int len) {
 
 
         default:
-            em_panic(code, index, len, state, "Unknown UDT instruction %c", current_code);
+            em_panic(state, "Unknown UDT instruction %c", current_code);
             return 0;
     }
 

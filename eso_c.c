@@ -7,9 +7,9 @@
 #include <string.h>
 #include <stdio.h>
 
-int run_c(em_state* state, const char* code, int index, int len) {
+int run_c(em_state* state) {
 
-    char current_code = tolower(code[index]);
+    char current_code = tolower(state->code[state->index]);
     log_verbose("\033[0;31m%c\033[0;0m (C interop)\n", current_code);
     log_ingestion(current_code);
 
@@ -20,17 +20,17 @@ int run_c(em_state* state, const char* code, int index, int len) {
         // Call a global function name
         case 'c':
         {
-            char* name = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);
+            em_stack_item* str = stack_top(state);
 
-            if (name == NULL) {
-                em_panic(code, index, len, state, "Could not find a complete name for C function to call: Did you forget to terminate the string?");
-            }
+            if (str == NULL || str->code != 's') {
+                em_panic(state, "Expected an s at stack top to call C function (name)");
+            }  
 
             em_c_binding* binding = NULL;
 
             // Find call by name
             for(int i = 0; i <= state->c_binding_ptr; i++) {
-                if (strcmp(name, state->c_bindings[i].name) == 0) {
+                if (strcmp(str->u.v_mptr->raw, state->c_bindings[i].name) == 0) {
                     binding = &state->c_bindings[i];
                     break;
                 }
@@ -38,8 +38,10 @@ int run_c(em_state* state, const char* code, int index, int len) {
 
             // No such binding
             if (binding == NULL) {
-                em_panic(code, index, len, state, "No such C function bound '%s'", name);
+                em_panic(state, "No such C function bound '%s'", str->u.v_mptr->raw);
             }
+
+            stack_pop(state);
 
             log_verbose("CALL INTO C FUNCTION %s @ %p\n", binding->name, binding->bound);
 
@@ -47,12 +49,11 @@ int run_c(em_state* state, const char* code, int index, int len) {
 
             log_verbose("FINISHED CALL INTO C FUNCTION %s @ %p\n", binding->name, binding->bound);
 
-            em_parser_free(state, name);
         }
         return size_to_skip;
 
         default:
-            em_panic(code, index, len, state, "Unknown C interop instruction %c", current_code);
+            em_panic(state, "Unknown C interop instruction %c", current_code);
             return size_to_skip;
 
     }

@@ -94,9 +94,9 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
     }
 }
 
-int run_debug(em_state* state, const char* code, int index, int len) {
+int run_debug(em_state* state) {
 
-    char current_code = tolower(code[index]);
+    char current_code = tolower(state->code[state->index]);
 
     log_verbose("\033[0;31m%c\033[0;0m (Debug)\n", current_code);
     log_ingestion(current_code);
@@ -110,7 +110,7 @@ int run_debug(em_state* state, const char* code, int index, int len) {
 
         // Trace
         case 't':
-        dump_instructions(code, index, len, state);
+        dump_instructions(state);
         break;
 
         // Type map
@@ -140,18 +140,18 @@ int run_debug(em_state* state, const char* code, int index, int len) {
         case 'l':
         {   
             int size_to_skip  = 0;
-            char* test = alloc_until(state, code, index+1, len, ';', true, &size_to_skip);        
+            char* test = alloc_until(state, state->code, state->index+1, state->len, ';', true, &size_to_skip);        
 
             if (test == NULL) {
-                em_panic(code, index, len, state, "Could not find a complete literal for line assertion: Did you forget to terminate it?");
+                em_panic(state, "Could not find a complete literal for line assertion: Did you forget to terminate it?");
             }
 
             uint32_t v = atoi(test);
             em_parser_free(state, test);
-            uint32_t real_line = calculate_file_line(state, code, index, len);
+            uint32_t real_line = calculate_file_line(state);
 
             if (real_line != v) {
-                em_panic(code, index, len, state, "Line assertion failed: Expected to be on line %d actually on line %d", v, real_line);
+                em_panic(state, "Line assertion failed: Expected to be on line %d actually on line %d", v, real_line);
             }
 
             return size_to_skip;
@@ -164,17 +164,17 @@ int run_debug(em_state* state, const char* code, int index, int len) {
             em_stack_item* two = stack_top(state);
 
             if (one == NULL || two == NULL) {
-                em_panic(code, index, len, state, "Operation assert requires two items on the stack to compare");
+                em_panic(state, "Operation assert requires two items on the stack to compare");
             }
 
             if (one->code == 's' && two->code == 's') {
                 // Do a string compare
                 if (strcmp((const char*)one->u.v_mptr->raw, (const char*)two->u.v_mptr->raw) != 0) {
-                    em_panic(code, index, len, state, "Assertion failed (string compare)");
+                    em_panic(state, "Assertion failed (string compare)");
                 }
             } else {
                 if (memcmp(&one->u, &two->u, sizeof(one->u)) != 0) {
-                    em_panic(code, index, len, state, "Assertion failed (%p vs. %p)", &one->u, &two->u);
+                    em_panic(state, "Assertion failed (%p vs. %p)", &one->u, &two->u);
                 }
             }
 
@@ -186,7 +186,7 @@ int run_debug(em_state* state, const char* code, int index, int len) {
         break;
 
         default:
-            em_panic(code, index, len, state, "Unknown debug instruction %c", current_code);
+            em_panic(state, "Unknown debug instruction %c", current_code);
             return 0;
 
     }
@@ -267,30 +267,30 @@ void dump_types(em_state* state) {
     }
 }
 
-void dump_instructions(const char* code, int index, int len, em_state* state) {
+void dump_instructions(em_state* state) {
 
-    int lengthcontext = index + 32; 
+    int lengthcontext = state->index + 32; 
 
-    if (lengthcontext >= len) {
-        lengthcontext = len;
+    if (lengthcontext >= state->len) {
+        lengthcontext = state->len;
     }
 
-    int precontext = index - 32;
+    int precontext = state->index - 32;
 
     if (precontext <= 0) {
         precontext = 0;
     }
 
     // Clamp the precontext so we start AFTER any newline
-    for(int i = index; i >= precontext; i--) {
-        if (code[i] == '\n') {
+    for(int i = state->index; i >= precontext; i--) {
+        if (state->code[i] == '\n') {
             precontext = i + 1;
             break;
         }
     }
 
-    for(int i = index; i < lengthcontext; i++) {
-        if (code[i] == '\n') {
+    for(int i = state->index; i < lengthcontext; i++) {
+        if (state->code[i] == '\n') {
             lengthcontext = i;
             break;
         }
@@ -303,7 +303,7 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
     for (int i = precontext; i < lengthcontext; i++) {
 
         // Guess at top level codes
-         switch (code[i]) {
+         switch (state->code[i]) {
             case 'm': 
             case 'l':
             case 's':
@@ -315,12 +315,12 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
             default: type_colour =  "\033[0m"; break;                
         }
 
-        if (i == index) {
+        if (i == state->index) {
             type_colour = "\033[0;31m";
         }
 
         log_printf( "%s", type_colour);
-        log_printf( "%c ", code[i]);
+        log_printf( "%c ", state->code[i]);
     }
 
     log_printf( "\n");
@@ -329,7 +329,7 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
 
     for (int i = precontext; i < lengthcontext; i++) {
 
-        if (i == index) {
+        if (i == state->index) {
             log_printf( "%s", "\033[0;31m^^\033[0m");
             continue;
         }
@@ -339,8 +339,8 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
             continue;
         }
 
-        if (i > state->last_mode_change && i < index &&
-            index >= precontext && index < lengthcontext &&
+        if (i > state->last_mode_change && i < state->index &&
+            state->index >= precontext && state->index < lengthcontext &&
             state->last_mode_change >= precontext && state->last_mode_change < lengthcontext) {
             log_printf( "%s", "--");
             continue;
@@ -350,8 +350,8 @@ void dump_instructions(const char* code, int index, int len, em_state* state) {
 
     }
 
-    uint32_t real_line = calculate_file_line(state, code, index, len);
-    uint32_t real_column = calculate_file_column(state, code, index, len);
+    uint32_t real_line = calculate_file_line(state);
+    uint32_t real_column = calculate_file_column(state);
 
     log_printf( "\n\n(%s line %d col %d)\n", state->filename, real_line, real_column);
 }

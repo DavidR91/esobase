@@ -12,9 +12,9 @@
 #include <stdarg.h> 
 #include <stdbool.h>
 
-int run_memory(em_state* state, const char* code, int index, int len) {
+int run_memory(em_state* state) {
 
-    char current_code = tolower(code[index]);
+    char current_code = tolower(state->code[state->index]);
     log_verbose("\033[0;31m%c\033[0;0m (Memory)\n", current_code);
     log_ingestion(current_code);
     
@@ -27,7 +27,7 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             em_stack_item* top = stack_top(state);
 
             if (top == NULL) {
-                em_panic(code, index, len, state, "Insufficient arguments to memory allocation: requires integer size on stack top");
+                em_panic(state, "Insufficient arguments to memory allocation: requires integer size on stack top");
             }
 
             uint32_t real_size = 0;
@@ -37,7 +37,7 @@ int run_memory(em_state* state, const char* code, int index, int len) {
                 case '2': real_size = top->u.v_int16; break;
                 case '4': real_size = top->u.v_int32; break;
                 case '8': real_size = top->u.v_int64; break;
-                default: em_panic(code, index, len, state, "Memory allocation requires integer number on top of stack - found %c\n", top->code);
+                default: em_panic(state, "Memory allocation requires integer number on top of stack - found %c\n", top->code);
             }
 
             void* arb = em_usercode_alloc(state, real_size, false);
@@ -61,13 +61,8 @@ int run_memory(em_state* state, const char* code, int index, int len) {
             return 0;
         }
 
-        // Leak check
-        case 'l': 
-        assert_no_leak(state);
-        return 0;
-
         default:
-            em_panic(code, index, len, state, "Unknown memory instruction %c", current_code);
+            em_panic(state, "Unknown memory instruction %c", current_code);
             return 0;
 
     }

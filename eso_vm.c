@@ -120,7 +120,7 @@ void em_parser_free(em_state* state, void* ptr) {
     free(ptr);
 }
 
-void em_panic(const char* code, int index, int len, em_state* state, const char* format, ...) {
+void em_panic(em_state* state, const char* format, ...) {
     va_list argptr;
     va_start(argptr, format);
     log_printf( "\n%s\n", "\033[0;31m* * * * PANIC * * * *\n\n");
@@ -129,7 +129,7 @@ void em_panic(const char* code, int index, int len, em_state* state, const char*
     log_printf( "\n\n");
     
     if (state != NULL) {
-        dump_instructions(code, index, len, state);
+        dump_instructions(state);
     } else {
         log_printf( "(No machine state and no instructions available)\n");
     }
@@ -168,7 +168,7 @@ size_t code_sizeof(char code) {
 
 char safe_get(const char* code, int index, int len) {
     if (index < 0 || index >= len) {
-        em_panic("(Source not available)", 0, 22, NULL, "Unexpectedly out of bounds safe-getting single character from index %d with code of length %d", index, len);
+        em_panic(NULL, "Unexpectedly out of bounds safe-getting single character from index %d with code of length %d", index, len);
         exit(1);
     }
 
@@ -201,7 +201,7 @@ bool is_code_using_managed_memory(char code) {
 em_type_definition* create_new_type(em_state* state) {
 
    if ((state->type_ptr+1) >= state->max_types) {
-        em_panic("(Source not available)", 0, 22, state, "Type definition overflow (%d types defined maximum of %d)", state->type_ptr, state->max_types);
+        em_panic(state, "Type definition overflow (%d types defined maximum of %d)", state->type_ptr, state->max_types);
     }
 
     state->type_ptr++;
@@ -215,10 +215,10 @@ em_managed_ptr* create_managed_ptr(em_state* state) {
     return ptr;
 }
 
-void free_managed_ptr(const char* code, int index, int len, em_state* state, em_managed_ptr* mptr) {
+void free_managed_ptr(em_state* state, em_managed_ptr* mptr) {
 
     if (mptr->size == 0) {
-        em_panic(code, index, len, state, "Attempting to free allocation of zero size: Unlikely to be legitimate allocation");
+        em_panic(state, "Attempting to free allocation of zero size: Unlikely to be legitimate allocation");
     }
 
     mptr->references--;
@@ -244,7 +244,7 @@ void free_managed_ptr(const char* code, int index, int len, em_state* state, em_
                     if (to_free == NULL) {
                         log_verbose("Resolved to NULL: Not initialized nothing to free\n", to_free);
                     } else {
-                        free_managed_ptr(code, index, len, state, to_free);
+                        free_managed_ptr(state, to_free);
                     }
                 }
             }
@@ -256,20 +256,20 @@ void free_managed_ptr(const char* code, int index, int len, em_state* state, em_
     }
 }
 
-uint32_t calculate_file_line(em_state* state, const char* code, int index, int len) {
+uint32_t calculate_file_line(em_state* state) {
     uint32_t line = 1;
-    for(int i = 0; i < index; i++) {
-        if (code[i] == '\n') {
+    for(int i = 0; i < state->index; i++) {
+        if (state->code[i] == '\n') {
             line++;
         }
     }
     return line;
 }
 
-uint32_t calculate_file_column(em_state* state, const char* code, int index, int len) {
+uint32_t calculate_file_column(em_state* state) {
     uint32_t column = 1;
-    for(int i = 0; i < index; i++) {
-        if (code[i] == '\n') {
+    for(int i = 0; i < state->index; i++) {
+        if (state->code[i] == '\n') {
             column = 1;
         } else {
             column++;

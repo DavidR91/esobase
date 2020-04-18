@@ -1,6 +1,7 @@
 ml
 
 s Hello, world!\n;
+s stdio.prints;
 
 mc
-c stdio.prints;
+c

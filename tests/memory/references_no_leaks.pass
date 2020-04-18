@@ -30,4 +30,5 @@ mu s test_string;
 ms p
 
 # Explicit leak check
-mm l
+ml s debug.assert_no_leak;
+mc c

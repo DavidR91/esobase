@@ -11,4 +11,4 @@ em_stack_item* stack_top(em_state* state);
 
 bool is_stack_item_numeric(em_stack_item* item);
 
-int run_stack(em_state* state, const char* code, int index, int len);
+int run_stack(em_state* state);

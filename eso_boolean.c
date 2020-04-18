@@ -11,9 +11,9 @@
 #include <stdarg.h> 
 #include <stdbool.h>
 
-int run_boolean(em_state* state, const char* code, int index, int len) {
+int run_boolean(em_state* state) {
 
-    char current_code = tolower(code[index]);
+    char current_code = tolower(state->code[state->index]);
 
     log_verbose("\033[0;31m%c\033[0;0m (Boolean)\n", current_code);
     log_ingestion(current_code);
@@ -26,11 +26,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             em_stack_item* two = stack_top(state);
 
             if (one == NULL || two == NULL) {
-                em_panic(code, index, len, state, "Operation add requires two items on the stack to add");
+                em_panic(state, "Operation add requires two items on the stack to add");
             }
 
             if (!is_stack_item_numeric(one) || !is_stack_item_numeric(two)) {
-                em_panic(code, index, len, state, 
+                em_panic(state, 
                     "Operation add requires two arguments of numeric type. Got %c and %c", one->code, two->code);
             }
 
@@ -48,7 +48,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break; 
@@ -63,7 +63,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -78,7 +78,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -93,7 +93,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -108,7 +108,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }   
                 break;
@@ -123,7 +123,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot add a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }   
                 break;
@@ -139,11 +139,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             em_stack_item* two = stack_top(state);
 
             if (one == NULL || two == NULL) {
-                em_panic(code, index, len, state, "Operation and requires two items on the stack");
+                em_panic(state, "Operation and requires two items on the stack");
             }
 
             if (one->code != '?' || two->code != '?') {
-                em_panic(code, index, len, state, 
+                em_panic(state, 
                     "Operation and requires two arguments of ? (boolean) type. Got %c and %c", one->code, two->code);
             }
 
@@ -165,11 +165,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             em_stack_item* two = stack_top(state);
 
             if (one == NULL || two == NULL) {
-                em_panic(code, index, len, state, "Operation or requires two items on the stack");
+                em_panic(state, "Operation or requires two items on the stack");
             }
 
             if (one->code != '?' || two->code != '?') {
-                em_panic(code, index, len, state, 
+                em_panic(state, 
                     "Operation or requires two arguments of ? (boolean) type. Got %c and %c", one->code, two->code);
             }
 
@@ -190,11 +190,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             em_stack_item* one = stack_top(state);
           
             if (one == NULL) {
-                em_panic(code, index, len, state, "Operation not requires an item on top of the stack");
+                em_panic(state, "Operation not requires an item on top of the stack");
             }
 
             if (one->code != '?') {
-                em_panic(code, index, len, state, 
+                em_panic(state, 
                     "Operation not requires one argument of ? (boolean) type. Got %c", one->code);
             }
 
@@ -233,11 +233,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             em_stack_item* two = stack_top(state);
 
             if (one == NULL || two == NULL) {
-                em_panic(code, index, len, state, "Operation less than requires two items on the stack to compare");
+                em_panic(state, "Operation less than requires two items on the stack to compare");
             }
 
             if (!is_stack_item_numeric(one) || !is_stack_item_numeric(two)) {
-                em_panic(code, index, len, state, 
+                em_panic(state, 
                     "Operation less than requires two arguments of numeric type. Got %c and %c", one->code, two->code);
             }
 
@@ -255,7 +255,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break; 
@@ -270,7 +270,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -285,7 +285,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -300,7 +300,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -315,7 +315,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }   
                 break;
@@ -330,7 +330,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }   
                 break;
@@ -345,11 +345,11 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
             em_stack_item* two = stack_top(state);
 
             if (one == NULL || two == NULL) {
-                em_panic(code, index, len, state, "Operation greater than requires two items on the stack to compare");
+                em_panic(state, "Operation greater than requires two items on the stack to compare");
             }
 
             if (!is_stack_item_numeric(one) || !is_stack_item_numeric(two)) {
-                em_panic(code, index, len, state, 
+                em_panic(state, 
                     "Operation greater than requires two arguments of numeric type. Got %c and %c", one->code, two->code);
             }
 
@@ -367,7 +367,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break; 
@@ -382,7 +382,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -397,7 +397,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -412,7 +412,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }
                 break;
@@ -427,7 +427,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }   
                 break;
@@ -442,7 +442,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
                         }
                         break;
                         default:
-                        em_panic(code, index, len, state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
+                        em_panic(state, "Cannot compare a number of type %c to a number of type %c without a cast", one->code, two->code);
                         break;
                     }   
                 break;
@@ -451,7 +451,7 @@ int run_boolean(em_state* state, const char* code, int index, int len) {
         break;
 
         default:
-            em_panic(code, index, len, state, "Unknown boolean instruction %c", current_code);
+            em_panic(state, "Unknown boolean instruction %c", current_code);
             return 0;
 
     }

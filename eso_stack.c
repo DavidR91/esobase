@@ -12,7 +12,7 @@
 int stack_push(em_state* state) {
 
     if ((state->stack_ptr + 1) >= state->stack_size) {
-        em_panic("(Source not available)", 0, 22, state, "Stack overflow (%d maximum of %d)", state->stack_ptr, state->stack_size);
+        em_panic(state, "Stack overflow (%d maximum of %d)", state->stack_ptr, state->stack_size);
     }
 
     state->stack_ptr++;
@@ -32,7 +32,7 @@ em_stack_item* stack_pop(em_state* state) {
 
             log_verbose("Stack pop %d is \033[0;31mremoving reference to managed memory\033[0;0m\n", state->stack_ptr);
         
-            free_managed_ptr("(Source not available)", 0, 22, state, top->u.v_mptr);
+            free_managed_ptr(state, top->u.v_mptr);
         }
 
         state->stack_ptr--;
@@ -61,7 +61,7 @@ em_stack_item* stack_pop_preserve_top(em_state* state, int count) {
 
                 log_verbose("Stack pop %d is \033[0;31mremoving reference to managed memory\033[0;0m\n", ptr);
             
-                free_managed_ptr("(Source not available)", 0, 22, state, popping->u.v_mptr);
+                free_managed_ptr(state, popping->u.v_mptr);
             }
 
             memset(&state->stack[ptr], 0, sizeof(em_stack_item));
@@ -113,9 +113,9 @@ bool is_stack_item_numeric(em_stack_item* item) {
 }
 
 
-int run_stack(em_state* state, const char* code, int index, int len) {
+int run_stack(em_state* state) {
 
-    char current_code = tolower(code[index]);
+    char current_code = tolower(state->code[state->index]);
 
     log_verbose("\033[0;31m%c\033[0;0m (Stack)\n", current_code);
     log_ingestion(current_code);
@@ -127,7 +127,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             log_verbose("Stack pop\n");
             
             if (stack_pop(state) == NULL) {
-                em_panic(code, index, len, state, "Cannot pop from stack: stack is empty");
+                em_panic(state, "Cannot pop from stack: stack is empty");
             }
 
             return 0;
@@ -138,7 +138,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             em_stack_item* dup = stack_top(state);
 
             if (dup == NULL) {
-                em_panic(code, index, len, state, "Cannot duplicate stack top: stack is empty");
+                em_panic(state, "Cannot duplicate stack top: stack is empty");
             }
 
             int ptr = stack_push(state);
@@ -164,11 +164,11 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             em_stack_item* offset = stack_top(state);
 
             if (offset == NULL) {
-                em_panic(code, index, len, state, "Cannot copy stack item: Need offset value at stack top");
+                em_panic(state, "Cannot copy stack item: Need offset value at stack top");
             }
 
             if (!is_code_numeric(offset->code)) {
-                em_panic(code, index, len, state, "Cannot copy stack item: Offset at stack top must be of numeric type");
+                em_panic(state, "Cannot copy stack item: Offset at stack top must be of numeric type");
             }
 
             uint32_t minus = 0; // Ignore the offset itself
@@ -179,7 +179,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
                 case '4': minus += offset->u.v_int32; break;
                 case '8': minus += offset->u.v_int64; break;
                 default: 
-                    em_panic(code, index, len, state, "Unhandled type %c in determining stack copy offset", offset->code);
+                    em_panic(state, "Unhandled type %c in determining stack copy offset", offset->code);
                 break;
             }
 
@@ -187,7 +187,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             em_stack_item* to_copy = stack_top_minus(state, minus);
 
             if (to_copy == NULL) {
-                em_panic(code, index, len, state, "Cannot copy stack item: Stack tells us to retrieve item at -%d to copy but no such item exists", minus);
+                em_panic(state, "Cannot copy stack item: Stack tells us to retrieve item at -%d to copy but no such item exists", minus);
             }
 
             // Pop the offset info
@@ -215,11 +215,11 @@ int run_stack(em_state* state, const char* code, int index, int len) {
             em_stack_item* offset = stack_top(state);
 
             if (offset == NULL) {
-                em_panic(code, index, len, state, "Cannot pop beneath top: Need number at stack top");
+                em_panic(state, "Cannot pop beneath top: Need number at stack top");
             }
 
             if (!is_code_numeric(offset->code)) {
-                em_panic(code, index, len, state, "Cannot pop beneath top: Item at stack top must be of numeric type");
+                em_panic(state, "Cannot pop beneath top: Item at stack top must be of numeric type");
             }
 
             uint32_t quantity = 0; 
@@ -230,7 +230,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
                 case '4': quantity = offset->u.v_int32; break;
                 case '8': quantity = offset->u.v_int64; break;
                 default: 
-                    em_panic(code, index, len, state, "Unhandled type %c in determining stack pop quantity", offset->code);
+                    em_panic(state, "Unhandled type %c in determining stack pop quantity", offset->code);
                 break;
             }
 
@@ -241,7 +241,7 @@ int run_stack(em_state* state, const char* code, int index, int len) {
         break;
 
         default:
-            em_panic(code, index, len, state, "Unknown stack instruction %c", current_code);
+            em_panic(state, "Unknown stack instruction %c", current_code);
             return 0;
     }
 
