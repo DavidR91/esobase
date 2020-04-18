@@ -61,6 +61,27 @@ int run_memory(em_state* state) {
             return 0;
         }
 
+        case 'l':
+        {
+            em_stack_item* top = stack_top(state);
+
+            if (top == NULL) {
+                em_panic(state, "Insufficient arguments to memory length: requires item of any type on stack top");
+            }
+
+            int stack_item = stack_push(state);
+
+            if (is_code_using_managed_memory(top->code)) {
+                state->stack[stack_item].code = '4';
+                state->stack[stack_item].u.v_int32 = top->u.v_mptr->size;
+            } else {
+                state->stack[stack_item].code = '4';
+                state->stack[stack_item].u.v_int32 = code_sizeof(top->code);
+            }
+
+            return 0;
+        }
+
         default:
             em_panic(state, "Unknown memory instruction %c", current_code);
             return 0;

@@ -1,0 +1,98 @@
+# byte
+ml 1 0;
+mm l
+ml 4 1;
+md a
+ms p
+
+# bool
+ml ?y
+mm l
+ml 4 1;
+md a
+ms p
+
+# int16
+ml 2 0;
+mm l
+ml 4 2;
+md a
+ms p
+
+# int32
+ml 4 0;
+mm l
+ml 4 4;
+md a
+ms p
+
+# int64
+ml 8 0;
+mm l
+ml 4 8;
+md a
+ms p
+
+# Arbitrary string (should be = string length + \0)
+ml s eggs are a good healthy food, yes;
+
+# 33 chars = 34 long
+mm l
+ml 4 34;
+md a
+ms p
+
+# Arbitrary memory allocation
+ml 4 333;
+mm a 
+l
+ml 4 333;
+md a
+ms p
+
+
+# UDT
+#
+ml
+
+############
+    s test_boolean;
+    ?n
+
+    s test_byte;
+    1;
+
+    s test_int16;
+    2;
+
+    s test_int32;
+    4;
+
+     s test_byt2;
+    1;
+
+    s test_int64;
+    8;
+
+    s test_float32;
+    f;
+
+    s test_float64;
+    d;
+
+    s test_string;
+    s;
+
+############
+
+4 9;
+s test_type;
+
+# Define the type
+mu d
+c test_type;
+
+mm l
+ml 4 48;
+md a
+ms p
