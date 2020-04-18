@@ -157,6 +157,78 @@ int run_memory(em_state* state) {
             return 0;
         }
 
+        // Set at byte offset
+        case 's': 
+        {
+            em_stack_item* destination = stack_top_minus(state, 2);
+            em_stack_item* destination_offset = stack_top_minus(state, 1);
+            em_stack_item* byte = stack_top(state);
+
+            if (destination == NULL || !is_code_using_managed_memory(destination->code)) {
+                em_panic(state, "Memory set byte offset requires destination at stack-2 of code s, u or *");
+            }
+
+            if (destination_offset == NULL || destination_offset->code != '4') {
+                em_panic(state, "Memory set byte offset requires offset bytes at stack-1 of code 4");
+            }
+
+            if (byte == NULL || byte->code != '1') {
+                em_panic(state, "Memory set byte offset requires a byte value (1) at stack top");
+            }
+
+            int dest_offset = destination_offset->u.v_int32;
+            int dest_size = destination->u.v_mptr->size;
+
+            if (destination->code == 's') {
+                dest_size--;
+            }
+
+            if (dest_offset < 0 || dest_offset >= dest_size) {
+                em_panic(state, "Memory set destination offset +%db is out of bounds for allocation of size %db", dest_offset, dest_size);
+            }
+
+            *(char*) (destination->u.v_mptr->raw + destination_offset->u.v_int32) = byte->u.v_byte;
+
+            for(int i = 1; i <= 3; i++) {
+                stack_pop(state);
+            } 
+
+        }
+        return 0;
+
+        // Set at byte offset
+        case 'g': 
+        {
+            em_stack_item* destination = stack_top_minus(state, 1);
+            em_stack_item* destination_offset = stack_top(state);
+
+            if (destination == NULL || !is_code_using_managed_memory(destination->code)) {
+                em_panic(state, "Memory get byte offset requires destination at stack-1 of code s, u or *");
+            }
+
+            if (destination_offset == NULL || destination_offset->code != '4') {
+                em_panic(state, "Memory get byte offset requires offset bytes at stack top of code 4");
+            }
+
+            int dest_offset = destination_offset->u.v_int32;
+            int dest_size = destination->u.v_mptr->size;
+
+            if (destination->code == 's') {
+                dest_size--;
+            }
+
+            if (dest_offset < 0 || dest_offset >= dest_size) {
+                em_panic(state, "Memory get destination offset +%db is out of bounds for allocation of size %db", dest_offset, dest_size);
+            }
+
+            int stack_item = stack_push(state);
+            state->stack[stack_item].code = '1';
+            state->stack[stack_item].u.v_byte = *(char*) (destination->u.v_mptr->raw + destination_offset->u.v_int32);
+
+            stack_pop_preserve_top(state, 2);
+        }
+        return 0;
+
         default:
             em_panic(state, "Unknown memory instruction %c", current_code);
             return 0;

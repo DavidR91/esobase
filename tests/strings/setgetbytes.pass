@@ -1,0 +1,23 @@
+ml s Hello;
+
+
+ms d
+ml 
+4 1;
+1 97; # a
+mm s
+
+ml sHallo;
+md a
+
+# Fetch the last byte
+ml s Hello;
+ml
+4 4;
+mm g
+
+# Should be 'o'
+ml 1 111;
+md a
+
+md s
