@@ -10,4 +10,5 @@ s test_struct;
 mu d
 c test_struct;
 
-mm l
+ml s debug.assert_no_leak;
+mc c

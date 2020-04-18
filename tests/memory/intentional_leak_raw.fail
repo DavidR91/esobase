@@ -2,5 +2,5 @@ ml 4 32;
 mm a
 
 # Leak (stack holds reference)
-
-mm l
+ml s debug.assert_no_leak;
+mc c
