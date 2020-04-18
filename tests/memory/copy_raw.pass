@@ -1,0 +1,30 @@
+# Destination outside of callstack
+ml 4 1;
+mm a 
+
+# Source, source offset bytes, count bytes, Destnation, destination offset bytes
+ml 4 128;
+mm a 
+
+ml 4 127; #+127b
+ml 4 1; # 1b
+
+ml 4 4;
+ms c 
+
+ml 4 0; # + 0b
+
+mm c
+
+md s
+
+
+# Result should be 1b long
+mm l
+ml 4 1;
+md a 
+
+ml s stdio.print_bytes;
+mc c
+
+ms p

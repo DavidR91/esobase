@@ -1,4 +1,5 @@
 // TODO
+// Arrays and string manip
 // When inspecting types show a byte map including padding
 // Better error handling esp. inside of C calls
 // Newline and escape processing

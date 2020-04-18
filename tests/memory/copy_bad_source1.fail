@@ -1,0 +1,16 @@
+ml s ------World;
+ml s Hello------;
+
+ml 4 2;
+ms c
+
+ml 4 11;  # Bad offset
+ml 4 1;  # count
+
+# Copy dest
+ml 4 4;
+ms c
+
+ml 4 6; # offset
+
+mm c

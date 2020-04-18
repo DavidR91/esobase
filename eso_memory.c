@@ -82,6 +82,81 @@ int run_memory(em_state* state) {
             return 0;
         }
 
+        // Source, source offset bytes, count bytes, Destnation, destination offset bytes
+        case 'c': 
+        {
+            em_stack_item* source = stack_top_minus(state, 4);
+            em_stack_item* source_offset = stack_top_minus(state, 3);
+            em_stack_item* byte_count = stack_top_minus(state, 2);
+            em_stack_item* destination = stack_top_minus(state, 1);
+            em_stack_item* destination_offset = stack_top(state);
+
+            if (source == NULL || !is_code_using_managed_memory(source->code)) {
+                em_panic(state, "Memory copy requires source at stack-4 of code s, u or *");
+            }
+
+            if (source_offset == NULL || source_offset->code != '4') {
+                em_panic(state, "Memory copy requires source offset bytes at stack-3 of code 4");
+            }
+
+            if (byte_count == NULL || byte_count->code != '4') {
+                em_panic(state, "Memory copy requires byte copy quantity at stack-2 of code 4");
+            }
+
+            if (destination == NULL || !is_code_using_managed_memory(destination->code)) {
+                em_panic(state, "Memory copy requires destination at stack-1 of code s, u or *");
+            }
+
+            if (destination_offset == NULL || destination_offset->code != '4') {
+                em_panic(state, "Memory copy requires destination offset bytes at stack top");
+            }
+
+            // Is source offset in bounds?
+            int src_offset = source_offset->u.v_int32;
+            int count = byte_count->u.v_int32;
+            int dest_offset = destination_offset->u.v_int32;
+            int src_size = source->u.v_mptr->size;
+            int dest_size = destination->u.v_mptr->size;
+
+            if (source->code == 's') {
+                src_size--;
+            }
+
+            if (destination->code == 's') {
+                dest_size--;
+            }
+
+            if (src_offset < 0 || src_offset >= src_size) {
+                em_panic(state, "Memory copy source offset +%db is out of bounds for source of size %db", src_offset, src_size);
+            }
+
+            if (src_offset + count > src_size) {
+                em_panic(state, "Memory copy offset %db is valid in source but there are not %db bytes available to copy (source is only %db in length)", src_offset, count, src_size);
+            }
+
+            if (dest_offset < 0 || dest_offset >= dest_size) {
+                em_panic(state, "Memory copy destination offset +%db is out of bounds for destination of size %db", dest_offset, dest_size);
+            }
+
+            if (dest_offset + count > dest_size) {
+                em_panic(state, "Memory copy offset %db is valid in destination but there are not %db bytes space to copy into (destination is only %db in length)", dest_offset, count, dest_size);
+            }
+
+            // We're done all we can: Hit it
+            memcpy(destination->u.v_mptr->raw + dest_offset, source->u.v_mptr->raw + src_offset, count);
+
+            // If this is a string ensure the null terminator remains
+            if (destination->code == 's') {
+                *((char*) destination->u.v_mptr->raw + (destination->u.v_mptr->size - 1)) = 0;
+            }
+
+            for(int i = 1; i <= 5; i++) {
+                stack_pop(state);
+            }
+
+            return 0;
+        }
+
         default:
             em_panic(state, "Unknown memory instruction %c", current_code);
             return 0;
