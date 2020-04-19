@@ -44,7 +44,7 @@ ms p
 
 # Arbitrary memory allocation
 ml 4 333;
-mm a 
+mm x
 l
 ml 4 333;
 md a

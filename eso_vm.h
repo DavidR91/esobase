@@ -29,6 +29,8 @@ typedef struct {
     uint32_t size;
     uint16_t references; // strong references
     em_type_definition* concrete_type;
+    bool is_array;
+    uint32_t array_element_size;
 } em_managed_ptr;
 
 typedef struct {

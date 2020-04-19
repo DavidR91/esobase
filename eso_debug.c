@@ -51,6 +51,16 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
             ptr->size, 
             ptr->references);
 
+        if (ptr->is_array) {
+
+            log_printf("Array [%d] each element %db in size\n",                 
+                ptr->size/ptr->array_element_size,
+                ptr->array_element_size);
+
+        } else {
+            log_printf("Not an array\n");
+        }
+
     } else {
 
         for (int t = 0; t < tab_start; t++) {
@@ -62,6 +72,8 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
             ptr->size, 
             ptr->references,
             ptr->raw);
+
+
 
         for(int field = 0; field < strlen(ptr->concrete_type->types); field++) {
 
@@ -212,7 +224,23 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
         case 'f': log_printf( "%f", item->u.v_float);break;
         case 'd': log_printf( "%f", item->u.v_double);break;
         case 's': log_printf( "\"%s\\0\" %p length %d refcount %d", item->u.v_mptr->raw, item->u.v_mptr->raw, item->u.v_mptr->size, item->u.v_mptr->references);break;
-        case '*': log_printf( "%p length %d refcount %d", item->u.v_mptr->raw, item->u.v_mptr->size, item->u.v_mptr->references); break;
+        case '*':  
+        {
+            if (item->u.v_mptr->is_array) {
+                log_printf( "%p length %d (array [%d] elements %db each) each refcount %d", 
+                    item->u.v_mptr->raw, 
+                    item->u.v_mptr->size, 
+                    item->u.v_mptr->size / item->u.v_mptr->array_element_size,
+                    item->u.v_mptr->array_element_size,
+                    item->u.v_mptr->references); 
+            } else {
+                log_printf( "%p length %d refcount %d", 
+                    item->u.v_mptr->raw, 
+                    item->u.v_mptr->size, 
+                    item->u.v_mptr->references); 
+            }
+        }
+        break;
         case '^': break;
         case 'u': 
         {

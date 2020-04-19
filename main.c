@@ -1,5 +1,7 @@
 // TODO
 // Arrays and string manip
+// Global callstack with flags such as 'unsafe'
+// Permit arbitrary byte get/set on various memory data when unsafe set
 // When inspecting types show a byte map including padding
 // Better error handling esp. inside of C calls
 // Newline and escape processing
