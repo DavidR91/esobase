@@ -147,7 +147,21 @@ int run_memory(em_state* state) {
         // Elements count based on a type size
         case 'e':
         {
+            em_stack_item* top = stack_top(state);
 
+            if (top == NULL) {
+                em_panic(state, "Insufficient arguments to array elements count: requires array at top of stack");
+            }
+
+            if (top->code != '*' || !top->u.v_mptr->is_array) {
+                em_panic(state, "Array element count requires a * of array type on stack top");
+            }
+            
+            int stack_item = stack_push(state);
+            state->stack[stack_item].code = '4';
+            state->stack[stack_item].u.v_int32 =  top->u.v_mptr->size / top->u.v_mptr->array_element_size;
+
+            return 0;
         }
         return 0;
 
