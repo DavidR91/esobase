@@ -186,10 +186,23 @@ int run_debug(em_state* state) {
 
             if (one->code == 's' && two->code == 's') {
                 // Do a string compare
-                if (strcmp((const char*)one->u.v_mptr->raw, (const char*)two->u.v_mptr->raw) != 0) {
-                    em_panic(state, "Assertion failed (string compare)");
-                }
+                //
+
+                if (one->u.v_mptr == state->null || two->u.v_mptr == state->null) {
+
+                    // Must both be null
+                    if (!(one->u.v_mptr == state->null && two->u.v_mptr == state->null)) {
+                        em_panic(state, "Assertion failed (comparison with at least one NULL)");
+                    }
+
+                } else {
+
+                    if (strcmp((const char*)one->u.v_mptr->raw, (const char*)two->u.v_mptr->raw) != 0) {
+                        em_panic(state, "Assertion failed (string compare)");
+                    }
+                }   
             } else {
+
                 if (memcmp(&one->u, &two->u, sizeof(one->u)) != 0) {
                     em_panic(state, "Assertion failed (%p vs. %p)", &one->u, &two->u);
                 }

@@ -1,4 +1,5 @@
 // TODO
+// Array get and set for all types
 // Arrays and string manip
 // Global callstack with flags such as 'unsafe'
 // Permit arbitrary byte get/set on various memory data when unsafe set

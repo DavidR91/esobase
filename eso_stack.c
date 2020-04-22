@@ -146,7 +146,10 @@ int run_stack(em_state* state) {
             // If it's a managed memory object just create a reference
             if (is_code_using_managed_memory(dup->code)) {
                 em_managed_ptr* reference = dup->u.v_mptr; 
-                em_add_reference(state, reference); // Stack holds a reference
+
+                if (reference != state->null) {
+                    em_add_reference(state, reference); // Stack holds a reference
+                }
 
                 state->stack[ptr].u.v_mptr = reference;
                 state->stack[ptr].code = dup->code;
@@ -198,7 +201,10 @@ int run_stack(em_state* state) {
             // Copy is a reference 
             if (is_code_using_managed_memory(to_copy->code)) {
                 em_managed_ptr* reference = to_copy->u.v_mptr; 
-                em_add_reference(state, reference); // Stack holds a reference
+
+                if (reference != state->null) {
+                    em_add_reference(state, reference); // Stack holds a reference
+                }
 
                 state->stack[ptr].u.v_mptr = reference;
                 state->stack[ptr].code = to_copy->code;

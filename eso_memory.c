@@ -319,7 +319,7 @@ int run_memory(em_state* state) {
 
             if (destination->u.v_mptr->is_array) {
 
-                int array_index = dest_offset * destination->u.v_mptr->array_element_size;
+                int array_index = dest_offset;
                 int array_size = dest_size / destination->u.v_mptr->array_element_size;
 
                  if (array_index < 0 || array_index >= array_size) {

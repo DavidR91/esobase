@@ -26,6 +26,10 @@ int run_c(em_state* state) {
                 em_panic(state, "Expected an s at stack top to call C function (name)");
             }  
 
+            if (str->u.v_mptr == state->null) {
+                em_panic(state, "Attempting to call C method using NULL as method name");
+            }
+
             em_c_binding* binding = NULL;
 
             // Find call by name
