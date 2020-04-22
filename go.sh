@@ -23,7 +23,6 @@ do
         raw_cmd_output=$(./eb "$file")
 
         if [ $? -eq 0 ]; then
-            echo "$raw_cmd_output"
             printf "\n\e[31m*************EXPECTED CASE TO FAIL BUT IT PASSED*************\e[39m\n\n"            
             exit 1
         else 

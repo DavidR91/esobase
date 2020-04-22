@@ -39,7 +39,8 @@ void assert_no_leak(em_state* state) {
     log_printf("Leak check: OK\n");
 }
 
-void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
+void inspect_pointer(em_state* state, em_managed_ptr* ptr, int tab_start) {
+
     if (ptr->concrete_type == NULL) {
 
         for (int t = 0; t < tab_start; t++) {
@@ -53,7 +54,9 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
 
         if (ptr->is_array) {
 
-            log_printf("Array [%d] each element %db in size\n",                 
+            log_printf("%s %c array [%d] each element %db in size\033[0m\n",                 
+                code_colour_code(ptr->array_element_code),
+                ptr->array_element_code,
                 ptr->size/ptr->array_element_size,
                 ptr->array_element_size);
 
@@ -73,8 +76,6 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
             ptr->references,
             ptr->raw);
 
-
-
         for(int field = 0; field < strlen(ptr->concrete_type->types); field++) {
 
             for (int t = 0; t < tab_start; t++) {
@@ -90,15 +91,15 @@ void inspect_pointer(em_managed_ptr* ptr, int tab_start) {
             if (is_code_using_managed_memory(ptr->concrete_type->types[field])) {
                 em_managed_ptr** field_value = (em_managed_ptr**)(ptr->raw + ptr->concrete_type->start_offset_bytes[field]);
 
-                if (*field_value == NULL) {
+                if (*field_value == state->null) {
                     for (int t = 0; t < (tab_start + 1); t++) {
                         log_printf("\t");
                     }
 
-                    log_printf("\033[0;31m UNINITIALIZED\033[0m\n");
+                    log_printf("\033[0;31m NULL\033[0m\n");
         
                 } else {
-                    inspect_pointer(*field_value, tab_start+1);
+                    inspect_pointer(state, *field_value, tab_start+1);
                 }
             }
         }
@@ -144,7 +145,11 @@ int run_debug(em_state* state) {
                 return 0;
             }
 
-            inspect_pointer(top->u.v_mptr, 0);
+            if (top->u.v_mptr == state->null) {
+                log_printf("NULL");
+            } else {
+                inspect_pointer(state, top->u.v_mptr, 0);
+            }
         }
         break;
 
@@ -223,34 +228,52 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
         case '8': log_printf( "%llu", item->u.v_int64);break;
         case 'f': log_printf( "%f", item->u.v_float);break;
         case 'd': log_printf( "%f", item->u.v_double);break;
-        case 's': log_printf( "\"%s\\0\" %p length %d refcount %d", item->u.v_mptr->raw, item->u.v_mptr->raw, item->u.v_mptr->size, item->u.v_mptr->references);break;
+        case 's': 
+        {
+            if (item->u.v_mptr == state->null) {
+                log_printf("NULL");
+            } else {
+                log_printf( "\"%s\\0\" %p length %d refcount %d", item->u.v_mptr->raw, item->u.v_mptr->raw, item->u.v_mptr->size, item->u.v_mptr->references);
+            }
+            break;
+        }
         case '*':  
         {
-            if (item->u.v_mptr->is_array) {
-                log_printf( "%p length %d (array [%d] elements %db each) each refcount %d", 
-                    item->u.v_mptr->raw, 
-                    item->u.v_mptr->size, 
-                    item->u.v_mptr->size / item->u.v_mptr->array_element_size,
-                    item->u.v_mptr->array_element_size,
-                    item->u.v_mptr->references); 
+             if (item->u.v_mptr == state->null) {
+                log_printf("NULL");
             } else {
-                log_printf( "%p length %d refcount %d", 
-                    item->u.v_mptr->raw, 
-                    item->u.v_mptr->size, 
-                    item->u.v_mptr->references); 
+                if (item->u.v_mptr->is_array) {
+                    log_printf( "%s%p length %d (%c array [%d] elements %db each) refcount %d\033[0m", 
+                        code_colour_code(item->u.v_mptr->array_element_code),
+                        item->u.v_mptr->raw, 
+                        item->u.v_mptr->size,
+                        item->u.v_mptr->array_element_code, 
+                        item->u.v_mptr->size / item->u.v_mptr->array_element_size,
+                        item->u.v_mptr->array_element_size,
+                        item->u.v_mptr->references); 
+                } else {
+                    log_printf( "%p length %d refcount %d", 
+                        item->u.v_mptr->raw, 
+                        item->u.v_mptr->size, 
+                        item->u.v_mptr->references); 
+                }
             }
         }
         break;
         case '^': break;
         case 'u': 
         {
-            // Find relevant type
-            em_type_definition* type = item->u.v_mptr->concrete_type;
+            if (item->u.v_mptr == state->null) {
+                printf("NULL");
+            } else {
+                // Find relevant type
+                em_type_definition* type = item->u.v_mptr->concrete_type;
 
-            log_printf( "%s (%db) references %d\n", type->name, item->u.v_mptr->size, item->u.v_mptr->references);
+                log_printf( "%s (%db) references %d\n", type->name, item->u.v_mptr->size, item->u.v_mptr->references);
 
-            for(int field = 0; field < strlen(type->types); field++) {
-                log_printf("%s\t\t\t |-- (%c) %s\033[0m\n", code_colour_code(type->types[field]), type->types[field], type->field_names[field]);
+                for(int field = 0; field < strlen(type->types); field++) {
+                    log_printf("%s\t\t\t |-- (%c) %s\033[0m\n", code_colour_code(type->types[field]), type->types[field], type->field_names[field]);
+                }
             }
         }
         break;

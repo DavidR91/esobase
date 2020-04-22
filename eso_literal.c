@@ -41,6 +41,11 @@ int run_literal(em_state* state) {
             }
 
             uint8_t v = atoi(test);
+
+            if (v == 0 && test[0] != 48) {
+                v = test[0];
+            }
+
             em_parser_free(state, test);
 
             int top = stack_push(state);
@@ -158,7 +163,7 @@ int run_literal(em_state* state) {
             mptr->raw = text;
             mptr->size = strlen(text) + 1; //alloc until is always NUL terminated
             mptr->concrete_type = NULL;
-            mptr->references++; // Stack holds a reference
+            em_add_reference(state, mptr); // Stack holds a reference
 
             // Usercode now owns this (bookkeeping)
             em_transfer_alloc_parser_usercode(state, mptr->size);

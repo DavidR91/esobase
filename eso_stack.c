@@ -28,7 +28,7 @@ em_stack_item* stack_pop(em_state* state) {
     } else {
         em_stack_item* top = &state->stack[state->stack_ptr];
 
-        if (is_code_using_managed_memory(top->code)) {
+        if (is_code_using_managed_memory(top->code) && top->u.v_mptr != state->null) {
 
             log_verbose("Stack pop %d is \033[0;31mremoving reference to managed memory\033[0;0m\n", state->stack_ptr);
         
@@ -57,7 +57,7 @@ em_stack_item* stack_pop_preserve_top(em_state* state, int count) {
 
             em_stack_item* popping = &state->stack[ptr];
 
-            if (is_code_using_managed_memory(popping->code)) {
+            if (is_code_using_managed_memory(popping->code) && popping->u.v_mptr != state->null) {
 
                 log_verbose("Stack pop %d is \033[0;31mremoving reference to managed memory\033[0;0m\n", ptr);
             
@@ -145,8 +145,8 @@ int run_stack(em_state* state) {
 
             // If it's a managed memory object just create a reference
             if (is_code_using_managed_memory(dup->code)) {
-                em_managed_ptr* reference = dup->u.v_mptr;
-                reference->references++;
+                em_managed_ptr* reference = dup->u.v_mptr; 
+                em_add_reference(state, reference); // Stack holds a reference
 
                 state->stack[ptr].u.v_mptr = reference;
                 state->stack[ptr].code = dup->code;
@@ -197,8 +197,8 @@ int run_stack(em_state* state) {
 
             // Copy is a reference 
             if (is_code_using_managed_memory(to_copy->code)) {
-                em_managed_ptr* reference = to_copy->u.v_mptr;
-                reference->references++;
+                em_managed_ptr* reference = to_copy->u.v_mptr; 
+                em_add_reference(state, reference); // Stack holds a reference
 
                 state->stack[ptr].u.v_mptr = reference;
                 state->stack[ptr].code = to_copy->code;

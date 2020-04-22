@@ -48,7 +48,7 @@ int run_memory(em_state* state) {
             mptr->size = real_size;
             mptr->raw = arb;
             mptr->concrete_type = NULL;
-            mptr->references++; // Stack holds reference
+            em_add_reference(state, mptr); // Stack holds a reference
 
             stack_pop(state);
 
@@ -61,31 +61,30 @@ int run_memory(em_state* state) {
             return 0;
         }
 
-        // allocate an array with an element size and count
+        // allocate an array 
+        // - size 
+        // - type code
         case 'a':
         {
-            em_stack_item* element_size_stack = stack_top_minus(state, 1);
+            em_stack_item* type_code_stack = stack_top(state);
 
-             // We need an int on the stack
-            em_stack_item* count_stack = stack_top(state);
-
-            if (element_size_stack == NULL) {
-                em_panic(state, "Insufficient arguments to array allocation: Expected an element size as 1, 2, 4 or 8 at stack top -1");
+            if (type_code_stack == NULL || type_code_stack->code != '1') {
+                em_panic(state, "Insufficient arguments to array allocation: Expected a type code (1248fdsu*) at stack top");
             }
 
+            em_stack_item* count_stack = stack_top_minus(state, 1);
+
             if (count_stack == NULL) {
-                em_panic(state, "Insufficient arguments to array allocation: Expected an element count as 1, 2, 4 or 8 at stack top");
+                em_panic(state, "Insufficient arguments to array allocation: Expected an array size specified as 1, 2, 4 or 8 at stack top - 1");
             }
 
             uint32_t element_size = 0;
             uint32_t element_count = 0;
 
-            switch(element_size_stack->code) {
-                case '1': element_size = element_size_stack->u.v_byte; break;
-                case '2': element_size = element_size_stack->u.v_int16; break;
-                case '4': element_size = element_size_stack->u.v_int32; break;
-                case '8': element_size = element_size_stack->u.v_int64; break;
-                default: em_panic(state, "Array allocation requires integer number on stack top - 1. Found %c\n", element_size_stack->code);
+            element_size = code_sizeof(type_code_stack->u.v_byte);
+
+            if (element_size == 0) {
+                em_panic(state, "Cannot construct array of unknown type '%c'", type_code_stack->u.v_byte);
             }
 
             switch(count_stack->code) {
@@ -93,7 +92,7 @@ int run_memory(em_state* state) {
                 case '2': element_count = count_stack->u.v_int16; break;
                 case '4': element_count = count_stack->u.v_int32; break;
                 case '8': element_count = count_stack->u.v_int64; break;
-                default: em_panic(state, "Array allocation requires integer number on stack top. Found %c\n", count_stack->code);
+                default: em_panic(state, "Array allocation requires integer number on stack top -1. Found %c\n", count_stack->code);
             }
 
             uint32_t real_size = element_size * element_count;
@@ -106,12 +105,20 @@ int run_memory(em_state* state) {
             mptr->size = real_size;
             mptr->raw = arb;
             mptr->concrete_type = NULL;
-            mptr->references++; // Stack holds reference
+            em_add_reference(state, mptr); // Stack holds a reference
 
             // We're an array
             mptr->is_array = true;
             mptr->array_element_size = element_size;
+            mptr->array_element_code = type_code_stack->u.v_byte;
 
+            if (is_code_using_managed_memory(mptr->array_element_code)) {
+                for(uint32_t i= 0; i < element_count; i++) {
+                    (((em_managed_ptr**) arb)[i]) = state->null;
+                }
+            }
+
+            stack_pop(state);
             stack_pop(state);
 
             int ptr = stack_push(state);
@@ -303,11 +310,6 @@ int run_memory(em_state* state) {
                 em_panic(state, "Memory get byte offset requires destination at stack-1 of code s, u or *");
             }
 
-            // Don't allow on arrays
-            if (destination->u.v_mptr->is_array) {
-                em_panic(state, "Arbitrary byte get/set not permitted on arrays");
-            }
-
             if (destination_offset == NULL || destination_offset->code != '4') {
                 em_panic(state, "Memory get byte offset requires offset bytes at stack top of code 4");
             }
@@ -315,19 +317,50 @@ int run_memory(em_state* state) {
             int dest_offset = destination_offset->u.v_int32;
             int dest_size = destination->u.v_mptr->size;
 
-            if (destination->code == 's') {
-                dest_size--;
+            if (destination->u.v_mptr->is_array) {
+
+                int array_index = dest_offset * destination->u.v_mptr->array_element_size;
+                int array_size = dest_size / destination->u.v_mptr->array_element_size;
+
+                 if (array_index < 0 || array_index >= array_size) {
+                    em_panic(state, "Array index %d out of bounds for array of size [%d] (%db)", array_index, array_size, dest_size);
+                }
+
+                int stack_item = stack_push(state);
+                state->stack[stack_item].code = destination->u.v_mptr->array_element_code;
+               
+                switch(destination->u.v_mptr->array_element_code) {
+                    case '1': break;
+                    case '2':  break;
+                    case '4':  break;
+                    case '8':  break;
+                    case 'f': break;
+                    case 'd': break;
+                    case 'u':
+                    case '*':
+                    case 's':
+                        state->stack[stack_item].u.v_mptr = (((em_managed_ptr**) destination->u.v_mptr->raw)[array_index]);
+                    break;
+                }
+
+            } else {
+
+                // Ignore NUL for strings
+                if (destination->code == 's') {
+                    dest_size--;
+                }
+
+                if (dest_offset < 0 || dest_offset >= dest_size) {
+                    em_panic(state, "Memory get destination offset +%db is out of bounds for allocation of size %db", dest_offset, dest_size);
+                }
+
+                int stack_item = stack_push(state);
+                state->stack[stack_item].code = '1';
+                state->stack[stack_item].u.v_byte = *(char*) (destination->u.v_mptr->raw + destination_offset->u.v_int32);
+
             }
 
-            if (dest_offset < 0 || dest_offset >= dest_size) {
-                em_panic(state, "Memory get destination offset +%db is out of bounds for allocation of size %db", dest_offset, dest_size);
-            }
-
-            int stack_item = stack_push(state);
-            state->stack[stack_item].code = '1';
-            state->stack[stack_item].u.v_byte = *(char*) (destination->u.v_mptr->raw + destination_offset->u.v_int32);
-
-            stack_pop_preserve_top(state, 2);
+            stack_pop_preserve_top(state, 1);
         }
         return 0;
 

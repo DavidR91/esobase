@@ -13,8 +13,11 @@ void stdio_prints(em_state* state) {
         em_panic(state, "Expected an s at stack top to perform print");
     }  
 
-    printf("%s", str->u.v_mptr->raw);
-
+    if (str->u.v_mptr == state->null) {
+        printf("NULL");
+    } else {
+        printf("%s", str->u.v_mptr->raw);
+    }
     stack_pop(state);
 }
 
@@ -28,6 +31,11 @@ void stdio_print_bytes(em_state* state) {
     if (bytes == NULL || !is_code_using_managed_memory(bytes->code)) {
         em_panic(state, "Expected an s u or * at stack top to print bytes");
     }  
+
+    if (bytes->u.v_mptr == state->null) {
+        printf("NULL\n");
+        return;
+    } 
 
     printf("%db = ", bytes->u.v_mptr->size);
 
@@ -59,7 +67,7 @@ void string_cat(em_state* state) {
     mptr->size =  a_nonul_size + b_nonul_size + 1; 
     mptr->raw = em_usercode_alloc(state, mptr->size, false);
     mptr->concrete_type = NULL;
-    mptr->references++; // Stack holds a reference
+    em_add_reference(state, mptr); // Stack holds a reference
     memset(mptr->raw, 0, mptr->size);
 
     memcpy(mptr->raw, a->u.v_mptr->raw, a_nonul_size);

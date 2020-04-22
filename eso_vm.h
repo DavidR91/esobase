@@ -29,8 +29,10 @@ typedef struct {
     uint32_t size;
     uint16_t references; // strong references
     em_type_definition* concrete_type;
+
     bool is_array;
     uint32_t array_element_size;
+    char array_element_code;
 } em_managed_ptr;
 
 typedef struct {
@@ -88,6 +90,8 @@ typedef struct em_state_forward {
     int len;
     int index;
 
+    em_managed_ptr* null;
+
 } em_state;
 
 typedef void (*em_c_call) (em_state* state);
@@ -131,3 +135,5 @@ uint32_t calculate_file_line(em_state* state);
 uint32_t calculate_file_column(em_state* state);
 
 void em_bind_c_call(em_state* state, char* name, em_c_call call);
+
+void em_add_reference(em_state* state, em_managed_ptr* mptr);

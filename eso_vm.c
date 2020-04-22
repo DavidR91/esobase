@@ -35,9 +35,30 @@ em_state* create_state(const char* filename) {
 
     state->mode = EM_MEMORY;
 
+    // Setup null
+    state->null = em_perma_alloc(state, sizeof(em_managed_ptr));
+    memset(state->null, 0, sizeof(em_managed_ptr));
+    state->null->size = 0;
+    state->null->raw = (void*)0xDEADBEEF;
+    state->null->concrete_type =  (void*)0xDEADBEEF;
+    state->null->references = 65535;
+
     em_bind_c_default(state);
 
     return state;
+}
+
+void em_add_reference(em_state* state, em_managed_ptr* mptr) {
+
+    if (mptr == state->null) {
+        em_panic(state, "Attempting to add reference to the null pointer %p", state->null);
+    }
+
+    if (mptr->references >= 65534) {
+        em_panic(state, "Attempting to add 65535 references to object");
+    }
+
+    mptr->references++;
 }
 
 void* em_perma_alloc(em_state* state, size_t size) {
@@ -217,6 +238,10 @@ em_managed_ptr* create_managed_ptr(em_state* state) {
 
 void free_managed_ptr(em_state* state, em_managed_ptr* mptr) {
 
+    if (mptr == state->null) {
+        em_panic(state, "Attempting to free the null pointer %p", state->null);
+    }
+
     if (mptr->size == 0) {
         em_panic(state, "Attempting to free allocation of zero size: Unlikely to be legitimate allocation");
     }
@@ -235,13 +260,14 @@ void free_managed_ptr(em_state* state, em_managed_ptr* mptr) {
             for(int field = 0; field < strlen(mptr->concrete_type->types); field++) {
 
                 if (is_code_using_managed_memory(mptr->concrete_type->types[field])) {
+
                     log_verbose("Freeing field %s of %s (%p +%db)\n", mptr->concrete_type->field_names[field], mptr->concrete_type->name, mptr->raw, mptr->concrete_type->start_offset_bytes[field]);
 
                     em_managed_ptr* to_free = *(em_managed_ptr**)(mptr->raw + mptr->concrete_type->start_offset_bytes[field]);
 
                     log_verbose("Resolves to %p\n", to_free);
 
-                    if (to_free == NULL) {
+                    if (to_free == state->null) {
                         log_verbose("Resolved to NULL: Not initialized nothing to free\n", to_free);
                     } else {
                         free_managed_ptr(state, to_free);

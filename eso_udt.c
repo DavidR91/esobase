@@ -51,8 +51,15 @@ int run_udt(em_state* state) {
             mptr->size = definition->size;
             mptr->raw = em_usercode_alloc(state, definition->size, false);
             memset(mptr->raw, 0, mptr->size);
-            mptr->concrete_type = definition;
-            mptr->references++; // Stack holds reference
+            mptr->concrete_type = definition; 
+            em_add_reference(state, mptr); // Stack holds a reference
+
+            // Explicitly set user fields to null
+            for(int i = 0; i < strlen(definition->types); i++) {
+                if (is_code_using_managed_memory(definition->types[i])) {
+                    *(em_managed_ptr**)(mptr->raw + definition->start_offset_bytes[i]) = state->null;
+                }
+            }
 
             int top = stack_push(state);
             state->stack[top].code = 'u';
@@ -158,15 +165,19 @@ int run_udt(em_state* state) {
                 {
                     em_managed_ptr* inside_type = *(em_managed_ptr**)(of_type->u.v_mptr->raw + field_bytes_start);
 
-                    if (inside_type == NULL) {
-                        em_panic(state, "Attempt to get uninitialized string field %s", name);
+                    if (inside_type == state->null) {
+
+                        int top = stack_push(state);
+                        state->stack[top].u.v_mptr = state->null;
+                        state->stack[top].code = field_code;                        
+
+                    } else {
+                        em_add_reference(state, inside_type); // Stack holds a reference
+
+                        int top = stack_push(state);
+                        state->stack[top].u.v_mptr = inside_type;
+                        state->stack[top].code = field_code;
                     }
-
-                    inside_type->references++;
-
-                    int top = stack_push(state);
-                    state->stack[top].u.v_mptr = inside_type;
-                    state->stack[top].code = field_code;
                 }
                 break;
                 default:
@@ -252,11 +263,11 @@ int run_udt(em_state* state) {
                     em_managed_ptr** field_value = (em_managed_ptr**)(of_type->u.v_mptr->raw + field_bytes_start);
 
                     // If the field has a value, drop its references
-                    if (*field_value != NULL) {
+                    if (*field_value != state->null) {
                         free_managed_ptr(state, *field_value);
                     }
 
-                    top->u.v_mptr->references++;
+                    em_add_reference(state, top->u.v_mptr); // Stack holds a reference
                     *field_value = top->u.v_mptr;
                 }
                 break;

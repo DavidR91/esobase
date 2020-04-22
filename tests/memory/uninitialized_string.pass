@@ -1,5 +1,4 @@
-# Uninitialized string should fail on fetch
-# (and not segfault)
+# Uninitialized string should generate a null on the stack and not segfault
 
 ml
 
@@ -15,3 +14,9 @@ c test_struct;
 
 # String is not initialised
 g empty;
+
+ml s stdio.prints;
+
+mcc
+
+ms p
