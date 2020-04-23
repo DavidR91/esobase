@@ -23,7 +23,7 @@ do
         raw_cmd_output=$(./eb "$file")
 
         if [ $? -eq 0 ]; then
-            printf "\n\e[31m*************EXPECTED CASE TO FAIL BUT IT PASSED*************\e[39m\n\n"            
+            printf "\n\e[31m*************EXPECTED CASE $file TO FAIL BUT IT PASSED*************\e[39m\n\n"            
             exit 1
         else 
             printf "\e[32m************* Intentional failure: $file *************\e[39m\n"

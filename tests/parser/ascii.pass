@@ -1,0 +1,16 @@
+# Specifying as-is literals we should use the actual ASCII code as stated
+# If the u prefixes is used, the ASCII code of the specified integer should be used
+
+ml
+
+1 %;
+1 u37;
+
+md a
+
+ml
+
+1 4;
+1 u52;
+
+md a

@@ -235,7 +235,7 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
 
     switch(item->code) {
         case '?': log_printf( "%d", item->u.v_bool); break;
-        case '1': log_printf( "%d", item->u.v_byte);break;
+        case '1': log_printf( "%d (%c)", item->u.v_byte, item->u.v_byte);break;
         case '2': log_printf( "%d", item->u.v_int16);break;
         case '4': log_printf( "%d", item->u.v_int32);break;
         case '8': log_printf( "%llu", item->u.v_int64);break;

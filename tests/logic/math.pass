@@ -1,5 +1,5 @@
 # 1 byte adds
-ml 13; 17;  mb +  ml 110;  md a
+ml 1u3; 1u7;  mb +  ml 1u10;  md a
 
 # 16 bit adds
 ml 2990; 2120;  mb +  ml 2 1110;  md a

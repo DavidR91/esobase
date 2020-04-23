@@ -40,9 +40,15 @@ int run_literal(em_state* state) {
                 em_panic(state, "Could not find a complete literal for byte: Did you forget to terminate it?");
             }
 
-            uint8_t v = atoi(test);
+            uint8_t v = 0;
 
-            if (v == 0 && test[0] != 48) {
+            if (test[0] == 'u' && strlen(test) > 1) {
+
+                // Specifying a character code
+                v = atoi(test + 1);
+            } else {
+
+                // Use ASCII value as-is
                 v = test[0];
             }
 

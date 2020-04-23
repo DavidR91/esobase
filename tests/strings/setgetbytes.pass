@@ -4,7 +4,7 @@ ml s Hello;
 ms d
 ml 
 4 1;
-1 97; # a
+1 u97; # a
 mm s
 
 ml sHallo;
@@ -17,9 +17,9 @@ ml
 mm g
 
 # Should be 'o'
-ml 1 111;
+ml 1 u111;
 md a
 
 md s
 
-ms p
+ms pp

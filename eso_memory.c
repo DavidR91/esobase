@@ -84,7 +84,7 @@ int run_memory(em_state* state) {
             element_size = code_sizeof(type_code_stack->u.v_byte);
 
             if (element_size == 0) {
-                em_panic(state, "Cannot construct array of unknown type '%c'", type_code_stack->u.v_byte);
+                em_panic(state, "Cannot construct array of unknown type '%c' (%x)", type_code_stack->u.v_byte,  type_code_stack->u.v_byte);
             }
 
             switch(count_stack->code) {
@@ -267,11 +267,6 @@ int run_memory(em_state* state) {
                 em_panic(state, "Memory set byte offset requires destination at stack-2 of code s, u or *");
             }
 
-            // Don't allow on arrays
-            if (destination->u.v_mptr->is_array) {
-                em_panic(state, "Arbitrary byte get/set not permitted on arrays");
-            }
-
             if (destination_offset == NULL || destination_offset->code != '4') {
                 em_panic(state, "Memory set byte offset requires offset bytes at stack-1 of code 4");
             }
@@ -283,17 +278,51 @@ int run_memory(em_state* state) {
             int dest_offset = destination_offset->u.v_int32;
             int dest_size = destination->u.v_mptr->size;
 
-            if (destination->code == 's') {
-                dest_size--;
+            if (destination->u.v_mptr->is_array) {
+
+                int array_index = dest_offset;
+                int array_size = dest_size / destination->u.v_mptr->array_element_size;
+
+                 if (array_index < 0 || array_index >= array_size) {
+                    em_panic(state, "Array index %d out of bounds for array of size [%d] (%db)", array_index, array_size, dest_size);
+                }
+
+                switch(destination->u.v_mptr->array_element_code) {
+                    case '1': 
+                        (((uint8_t*) destination->u.v_mptr->raw)[array_index]) = byte->u.v_byte;
+                    break;
+                    case '2':
+                        (((uint16_t*) destination->u.v_mptr->raw)[array_index]) = byte->u.v_int16;
+                    break;
+                    case '4':  
+                    break;
+                    case '8':  
+                    break;
+                    case 'f': 
+                    break;
+                    case 'd': 
+                    break;
+
+                    case 'u':
+                    case '*':
+                    case 's':                        
+                    break;
+                }
+
+            } else { 
+
+                if (destination->code == 's') {
+                    dest_size--;
+                }
+
+                if (dest_offset < 0 || dest_offset >= dest_size) {
+                    em_panic(state, "Memory set destination offset +%db is out of bounds for allocation of size %db", dest_offset, dest_size);
+                }
+
+                *(char*) (destination->u.v_mptr->raw + destination_offset->u.v_int32) = byte->u.v_byte;
             }
 
-            if (dest_offset < 0 || dest_offset >= dest_size) {
-                em_panic(state, "Memory set destination offset +%db is out of bounds for allocation of size %db", dest_offset, dest_size);
-            }
-
-            *(char*) (destination->u.v_mptr->raw + destination_offset->u.v_int32) = byte->u.v_byte;
-
-            for(int i = 1; i <= 3; i++) {
+            for(int i = 1; i <= 2; i++) {
                 stack_pop(state);
             } 
 
@@ -330,12 +359,25 @@ int run_memory(em_state* state) {
                 state->stack[stack_item].code = destination->u.v_mptr->array_element_code;
                
                 switch(destination->u.v_mptr->array_element_code) {
-                    case '1': break;
-                    case '2':  break;
-                    case '4':  break;
-                    case '8':  break;
-                    case 'f': break;
-                    case 'd': break;
+                    case '1': 
+                        state->stack[stack_item].u.v_byte = (((uint8_t*) destination->u.v_mptr->raw)[array_index]);
+                    break;
+                    case '2':  
+                        state->stack[stack_item].u.v_int16 = (((uint16_t*) destination->u.v_mptr->raw)[array_index]);
+                    break;
+                    case '4':  
+                        state->stack[stack_item].u.v_int32 = (((uint32_t*) destination->u.v_mptr->raw)[array_index]);
+                    break;
+                    case '8':  
+                        state->stack[stack_item].u.v_int64 = (((uint64_t*) destination->u.v_mptr->raw)[array_index]);
+                    break;
+                    case 'f': 
+                        state->stack[stack_item].u.v_float = (((float*) destination->u.v_mptr->raw)[array_index]);
+                    break;
+                    case 'd': 
+                        state->stack[stack_item].u.v_double = (((double*) destination->u.v_mptr->raw)[array_index]);
+                    break;
+
                     case 'u':
                     case '*':
                     case 's':
