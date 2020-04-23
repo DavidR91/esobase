@@ -261,18 +261,13 @@ int run_memory(em_state* state) {
         {
             em_stack_item* destination = stack_top_minus(state, 2);
             em_stack_item* destination_offset = stack_top_minus(state, 1);
-            em_stack_item* byte = stack_top(state);
-
+            
             if (destination == NULL || !is_code_using_managed_memory(destination->code)) {
-                em_panic(state, "Memory set byte offset requires destination at stack-2 of code s, u or *");
+                em_panic(state, "Memory set offset requires destination at stack-2 of code s, u or *");
             }
 
             if (destination_offset == NULL || destination_offset->code != '4') {
-                em_panic(state, "Memory set byte offset requires offset bytes at stack-1 of code 4");
-            }
-
-            if (byte == NULL || byte->code != '1') {
-                em_panic(state, "Memory set byte offset requires a byte value (1) at stack top");
+                em_panic(state, "Memory set offset requires offset bytes at stack-1 of code 4");
             }
 
             int dest_offset = destination_offset->u.v_int32;
@@ -283,24 +278,35 @@ int run_memory(em_state* state) {
                 int array_index = dest_offset;
                 int array_size = dest_size / destination->u.v_mptr->array_element_size;
 
+                em_stack_item* source = stack_top(state);
+
+                if (source == NULL || source->code != destination->u.v_mptr->array_element_code) {
+                    em_panic(state, "Memory set offset requires a value of type %c at stack top to set into array of type %c",
+                        destination->u.v_mptr->array_element_code, destination->u.v_mptr->array_element_code);
+                }
+
                  if (array_index < 0 || array_index >= array_size) {
                     em_panic(state, "Array index %d out of bounds for array of size [%d] (%db)", array_index, array_size, dest_size);
                 }
 
                 switch(destination->u.v_mptr->array_element_code) {
                     case '1': 
-                        (((uint8_t*) destination->u.v_mptr->raw)[array_index]) = byte->u.v_byte;
+                        (((uint8_t*) destination->u.v_mptr->raw)[array_index]) = source->u.v_byte;
                     break;
                     case '2':
-                        (((uint16_t*) destination->u.v_mptr->raw)[array_index]) = byte->u.v_int16;
+                        (((uint16_t*) destination->u.v_mptr->raw)[array_index]) = source->u.v_int16;
                     break;
-                    case '4':  
+                    case '4':
+                        (((uint32_t*) destination->u.v_mptr->raw)[array_index]) = source->u.v_int32;
                     break;
-                    case '8':  
+                    case '8':
+                        (((uint64_t*) destination->u.v_mptr->raw)[array_index]) = source->u.v_int64;  
                     break;
                     case 'f': 
+                        (((float*) destination->u.v_mptr->raw)[array_index]) = source->u.v_float;
                     break;
                     case 'd': 
+                        (((double*) destination->u.v_mptr->raw)[array_index]) = source->u.v_double;
                     break;
 
                     case 'u':
@@ -310,6 +316,12 @@ int run_memory(em_state* state) {
                 }
 
             } else { 
+
+                em_stack_item* byte = stack_top(state);
+
+                if (byte == NULL || byte->code != '1') {
+                    em_panic(state, "Memory set byte offset requires a byte value (1) at stack top");
+                }
 
                 if (destination->code == 's') {
                     dest_size--;
@@ -336,11 +348,11 @@ int run_memory(em_state* state) {
             em_stack_item* destination_offset = stack_top(state);
 
             if (destination == NULL || !is_code_using_managed_memory(destination->code)) {
-                em_panic(state, "Memory get byte offset requires destination at stack-1 of code s, u or *");
+                em_panic(state, "Memory get offset requires destination at stack-1 of code s, u or *");
             }
 
             if (destination_offset == NULL || destination_offset->code != '4') {
-                em_panic(state, "Memory get byte offset requires offset bytes at stack top of code 4");
+                em_panic(state, "Memory get offset requires offset bytes at stack top of code 4");
             }
 
             int dest_offset = destination_offset->u.v_int32;
