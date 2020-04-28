@@ -1,0 +1,1 @@
+docker run --rm -it -v $PWD/afl:/esobase/afl_out --entrypoint sh esobase-dev /esobase/go-afl.sh
