@@ -1,6 +1,0 @@
-a=4
-for i in *; do
-  new=$(printf "fuzz_crash%04d.pass" "$a")
-  mv -i -- "$i" "$new"
-  let a=a+1
-done

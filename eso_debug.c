@@ -33,7 +33,7 @@ void assert_no_leak(em_state* state) {
     if (state->memory_usercode.allocated != 0) {
         log_printf( "\033[0;31m********\n\n\nUSERCODE MEMORY LEAK (%db)\n\n\n********\033[0;0m\n", state->memory_usercode.allocated);
         print_memory_use(state);
-        exit(1);
+        exit(9);
     }
 
     log_printf("Leak check: OK\n");

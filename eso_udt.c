@@ -86,6 +86,10 @@ int run_udt(em_state* state) {
                 em_panic(state, "Expected a u at stack top to get field value from type");
             }  
 
+            if (of_type->u.v_mptr == state->null) {
+                em_panic(state, "u at stack top for get field value is NULL");
+            }  
+
             em_type_definition* definition = of_type->u.v_mptr->concrete_type;
 
             int field_bytes_start = 0;
@@ -359,7 +363,7 @@ int run_udt(em_state* state) {
 
                 byte_start += (naive_size + padding_required);
             }
-            
+
             uint32_t aligned_size = calculate_aligned_struct_size(state, field_qty);
 
             new_type->size = aligned_size;
