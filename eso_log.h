@@ -1,6 +1,6 @@
 #pragma once
 
-#define ESO_VERBOSE_DEBUG
+// #define ESO_VERBOSE_DEBUG
 
 void log_printf(const char* format, ...);
 void log_verbose(const char* format, ...);

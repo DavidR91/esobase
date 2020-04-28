@@ -276,6 +276,18 @@ void free_managed_ptr(em_state* state, em_managed_ptr* mptr) {
             }
         }
 
+        // If this is an array, we need to free any objects it references
+        if (mptr->is_array && is_code_using_managed_memory(mptr->array_element_code)) {
+
+            for (int i = 0; i < (mptr->size / mptr->array_element_size); i++) {
+                 em_managed_ptr* element = (((em_managed_ptr**) mptr->raw)[i]);
+
+                 if (element != state->null) {
+                    free_managed_ptr(state, element);
+                 }
+            }
+        }
+
         em_usercode_free(state, mptr->raw, mptr->size, false); // Real memory
         memset(mptr, 0, sizeof(em_managed_ptr));       
         em_usercode_free(state, mptr, sizeof(em_managed_ptr), true); // Overhead

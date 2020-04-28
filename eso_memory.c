@@ -262,7 +262,7 @@ int run_memory(em_state* state) {
             return 0;
         }
 
-        // Set at byte offset
+        // Set at [byte] offset
         case 's': 
         {
             em_stack_item* destination = stack_top_minus(state, 2);
@@ -317,7 +317,20 @@ int run_memory(em_state* state) {
 
                     case 'u':
                     case '*':
-                    case 's':                        
+                    case 's':
+                    {
+                        em_managed_ptr* x = ((em_managed_ptr**) destination->u.v_mptr->raw)[array_index];
+
+                        if (x != state->null) {
+                            free_managed_ptr(state, x);
+                        }
+
+                        (((em_managed_ptr**) destination->u.v_mptr->raw)[array_index]) = source->u.v_mptr;
+
+                        if (source->u.v_mptr != state->null) {
+                            em_add_reference(state, source->u.v_mptr);
+                        }
+                    }
                     break;
                 }
 
@@ -347,7 +360,7 @@ int run_memory(em_state* state) {
         }
         return 0;
 
-        // Set at byte offset
+        // Get at [byte] offset
         case 'g': 
         {
             em_stack_item* destination = stack_top_minus(state, 1);
@@ -400,6 +413,10 @@ int run_memory(em_state* state) {
                     case '*':
                     case 's':
                         state->stack[stack_item].u.v_mptr = (((em_managed_ptr**) destination->u.v_mptr->raw)[array_index]);
+
+                        if (state->stack[stack_item].u.v_mptr != state->null) {
+                            em_add_reference(state, state->stack[stack_item].u.v_mptr);
+                        }
                     break;
                 }
 

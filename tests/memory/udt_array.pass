@@ -1,0 +1,102 @@
+ml
+
+############
+    s test_boolean;
+    ?n
+
+    s test_byte;
+    1;
+
+############
+
+4 2;
+s test_type;
+
+mu d
+
+# Create array
+ml  4 20;  1u;
+
+mm a
+
+# Offset 0
+ml 4 0;
+
+# Create an instance of our type
+mu c test_type;
+
+ml ?y mu stest_boolean;
+ml 1Z; mu stest_byte;
+
+md s
+md i
+
+# Put it into the array
+mm s
+
+# Get it back out of the array
+ml 4 0; 
+mm g
+
+# Should have Z
+mu gtest_byte;
+ml 1Z;
+md a 
+
+# Should have true
+mu gtest_boolean;
+ml ?y
+md a 
+
+# Copy the array 
+ml 4 2;
+ms c
+
+# Put ANOTHER instance of the type in the array but overwrite the other
+#
+# Offset 0
+ml 4 0;
+
+# Create an instance of our type
+mu c test_type;
+
+ml ?n mu stest_boolean;
+ml 1Q; mu stest_byte;
+
+mm s
+
+
+# Get it back out of the array
+ml 4 0; 
+mm g
+
+md s
+
+# Should have Q
+mu gtest_byte;
+ml 1Q;
+md a 
+
+# Should have false
+mu gtest_boolean;
+ml ?n
+md a 
+
+# Remove the UDT and the array copy from the stack
+ms pp
+
+# First type should still be on the stack and valid underneath with its original values
+# Should have Z
+mu gtest_byte;
+ml 1Z;
+md a 
+
+# Should have true
+mu gtest_boolean;
+ml ?y
+md a 
+
+# Rid of UDT and array
+ms pp
+
+md s
