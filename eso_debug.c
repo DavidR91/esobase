@@ -246,7 +246,7 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
             if (item->u.v_mptr == state->null) {
                 log_printf("NULL");
             } else {
-                log_printf( "\"%s\\0\" %p length %d refcount %d", item->u.v_mptr->raw, item->u.v_mptr->raw, item->u.v_mptr->size, item->u.v_mptr->references);
+                log_printf( "\"%s\033[0;33m0%s\" %p length %d refcount %d", item->u.v_mptr->raw, type_colour, item->u.v_mptr->raw, item->u.v_mptr->size, item->u.v_mptr->references);
             }
             break;
         }

@@ -217,12 +217,12 @@ int run_memory(em_state* state) {
             int src_size = source->u.v_mptr->size;
             int dest_size = destination->u.v_mptr->size;
 
-            if (source->code == 's') {
-                src_size--;
+            if (source->code == 's' && (src_offset >= src_size - 1 || src_offset + count > src_size-1)) {
+                em_panic(state, "Memory copy source offset +%db for allocation of %db involves a string null terminator which is not permitted", src_offset, src_size);
             }
 
-            if (destination->code == 's') {
-                dest_size--;
+            if (destination->code == 's' && (dest_offset >= dest_size - 1 || dest_offset + count > dest_size - 1)) {
+                em_panic(state, "Memory copy destination offset +%db for allocation of %db involves a string null terminator which is not permitted", dest_offset, dest_size);
             }
 
             if (src_offset < 0 || src_offset >= src_size) {
@@ -323,8 +323,8 @@ int run_memory(em_state* state) {
                     em_panic(state, "Memory set byte offset requires a byte value (1) at stack top");
                 }
 
-                if (destination->code == 's') {
-                    dest_size--;
+                if (destination->code == 's' && dest_offset == dest_size - 1) {
+                    em_panic(state, "Memory set destination offset +%db attempts to change the null terminator of a string which is not permitted. The total allocation is %db in length but last valid string byte is at +%db", dest_offset, dest_size, dest_size - 2);
                 }
 
                 if (dest_offset < 0 || dest_offset >= dest_size) {
@@ -398,11 +398,6 @@ int run_memory(em_state* state) {
                 }
 
             } else {
-
-                // Ignore NUL for strings
-                if (destination->code == 's') {
-                    dest_size--;
-                }
 
                 if (dest_offset < 0 || dest_offset >= dest_size) {
                     em_panic(state, "Memory get destination offset +%db is out of bounds for allocation of size %db", dest_offset, dest_size);
