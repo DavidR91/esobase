@@ -9,7 +9,7 @@ s time_locale_2;
 s;
 4 7;
 s time_t_n;
-mu d
+md smu d
 
 #struct
 ml

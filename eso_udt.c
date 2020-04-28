@@ -300,8 +300,6 @@ int run_udt(em_state* state) {
                 em_panic(state, "Not allowed to declare type %s with no fields", name->u.v_mptr->raw);
             }
 
-            uint32_t aligned_size = calculate_aligned_struct_size(state, field_qty);
-
             // Currently assuming types live forever
             //
             em_type_definition* new_type = create_new_type(state);
@@ -361,6 +359,8 @@ int run_udt(em_state* state) {
 
                 byte_start += (naive_size + padding_required);
             }
+            
+            uint32_t aligned_size = calculate_aligned_struct_size(state, field_qty);
 
             new_type->size = aligned_size;
 

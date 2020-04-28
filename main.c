@@ -170,6 +170,10 @@ void run(em_state* state) {
             {               
                 int skip = 0;
 
+                #ifdef ESO_VERBOSE_DEBUG
+                    log_verbose("---------------------------- %d:%d\n", calculate_file_line(state), calculate_file_column(state));
+                #endif
+
                 // Allow modes to eat text
                 switch(state->mode) {
                     case EM_MEMORY: skip = run_memory(state); break;

@@ -31,7 +31,7 @@ ml s stdio.print_bytes; 8589934590md s
 ms pp
 
 
-ml 4 20; 1 *; mm a 
+ml 4 20; 1 *; md s mm a 
 ml 4 0; mm g
 ms dd
 

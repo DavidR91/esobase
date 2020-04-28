@@ -165,7 +165,7 @@ void em_panic(em_state* state, const char* format, ...) {
 
     log_printf( "\n");
     va_end(argptr);
-    exit(1);
+    exit(666);
 }
 
 size_t code_sizeof(char code) {

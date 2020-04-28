@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdarg.h> 
+#include "eso_log.h"
 
 void log_printf(const char* format, ...) {
     va_list argptr;
@@ -14,8 +15,11 @@ void log_printf(const char* format, ...) {
 void log_verbose(const char* format, ...) {
     va_list argptr;
     va_start(argptr, format);
-    // fprintf(stderr, "[VRB] ");
-    // vfprintf(stderr, format, argptr);
+
+    #ifdef ESO_VERBOSE_DEBUG
+     fprintf(stdout, "[VRB] ");
+     vfprintf(stdout, format, argptr);
+     #endif
     va_end(argptr);
 }
 

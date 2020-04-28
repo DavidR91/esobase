@@ -36,7 +36,9 @@ int run_memory(em_state* state) {
                 case '1': real_size = top->u.v_byte; break;
                 case '2': real_size = top->u.v_int16; break;
                 case '4': real_size = top->u.v_int32; break;
-                case '8': real_size = top->u.v_int64; break;
+                case '8': 
+                    em_panic(state, "64 bit memory allocations are not currently supported (Attempt to allocate with %llu)", top->u.v_int64);
+                    break;
                 default: em_panic(state, "Memory allocation requires integer number on top of stack - found %c\n", top->code);
             }
 
@@ -91,11 +93,15 @@ int run_memory(em_state* state) {
                 case '1': element_count = count_stack->u.v_byte; break;
                 case '2': element_count = count_stack->u.v_int16; break;
                 case '4': element_count = count_stack->u.v_int32; break;
-                case '8': element_count = count_stack->u.v_int64; break;
+                case '8': 
+                    em_panic(state, "64 bit array sizes are not currently supported (Attempt to allocate with %llu)", count_stack->u.v_int64);
+                break;
                 default: em_panic(state, "Array allocation requires integer number on stack top -1. Found %c\n", count_stack->code);
             }
 
             uint32_t real_size = element_size * element_count;
+
+            log_verbose("Building array %llu elements of %llub each total %llub\n", element_count, element_size, real_size);
 
             void* arb = em_usercode_alloc(state, real_size, false);
             memset(arb, 0, real_size);

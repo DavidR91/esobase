@@ -29,7 +29,7 @@ md a
 ms p
 
 # float
-ml 4 20; 1f; mma 
+ml 4 20; 1f; md s mma 
 ml 4 10; ml f 2.28; mm s 
 ml 4 10; mm g 
 ml f 2.28;
@@ -41,3 +41,5 @@ ml 4 10; mm g
 ml d 2.2238;
 md a
 ms p
+md s
+ms pp
