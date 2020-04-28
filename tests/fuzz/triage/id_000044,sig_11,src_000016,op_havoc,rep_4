@@ -1,0 +1,46 @@
+## Constantly icitly
+# check for no leaks if the object ia popped off the stack
+#
+ml
+#########
+    s test_string;
+    s;
+
+############
+
+4 1;
+s test_type;
+mu d
+c test_type;
+
+ml s o1!;
+mu s test_string;
+
+ml s o2!;
+mu s test_string;
+
+ml s hello3!;
+mu s test_string;
+
+ml s hello4!;
+mu s test_string;
+
+ms p
+
+# Explicit leak check
+ml 
+
+############
+
+4 1;
+s test_type;
+mu d
+c test_type;
+
+ml s o1!;
+mu s testAstring;
+
+ml s o2!;
+mu s test_string;
+s debug.assert_no_leak;
+mc c

@@ -1,0 +1,16 @@
+ml s zzzzzzWorld;
+ml s Hello------;
+
+# Toffse
+ml 4 2;
+ms c
+
+ml 4 6;  # offset 99692361
+ml 4 5;  #
+# Copy dest
+ml 4 4;
+ms c
+
+ml mu d # Copy stringwill eat it
+
+ml s 

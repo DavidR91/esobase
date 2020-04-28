@@ -1,0 +1,41 @@
+# Bytes
+ml 4 20; 11; mma 
+ml 4 10;1 u99; mm s 
+ml 4 10; mm g 
+ml 1 u99;*md a
+ms p
+
+# Int16
+ml 4 20; 12; mma 
+ml 4 10; ml 2 1768; mm s 
+ml 4 10; mm g 
+ml 2 1768;
+md a
+ms p
+ml 4 20; 14; mma 
+ml 4 10;4 4294967294; mm s 
+ml 4 10; mm g 
+ml 4 4294967294;
+md a
+ms p
+
+# Int64
+ml 4 20; 18; mma 
+ml 4 10; ml 8 18446744073709551614; mm s 
+ml 4 10; mm g 
+ml 8 18446744073709551614;
+md a
+ms p
+
+# float
+ml 4 20; 1f; mma 
+ml 4 10; ml f 2.28; mm s 
+ml 4 10; mm g 
+ml  8589934590 a
+ms p
+ml 4 20; 1d; mma 
+ml 4 10;d 2.2238; mm s 
+ml 4 10; mm g 
+ml d 2.2238;
+md a
+ms p

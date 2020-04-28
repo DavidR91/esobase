@@ -1,0 +1,45 @@
+# Test various properties of null
+
+ml 4 20; 1 s; mm a # Getting index 0 should put NULL on stack
+ml 4 0; mm g# Should safely duplicate 
+ms dd
+
+# Should be equal
+md i# Should print safely
+ml s stdio.prints; 
+mc c
+
+# and again
+ml s stdio.print_bytes; 8589934590# and pop OK too
+ms p
+
+##
+# Should work the same for all types
+##
+
+ml 4 20; 1 u; mm a 
+ml 4 0; mm g
+ms dd
+
+# Should be equal
+md a
+
+ml s stdio.print_bytes; 
+mc c
+
+md s
+ms pp
+
+
+ml 4 20; 1 *; mm a 
+ml 4 0; mm g
+ms dd
+
+# Should be equal
+md a
+
+ml s stdio.print_bytes; 
+mc c
+
+md s
+ms pp

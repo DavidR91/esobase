@@ -1,0 +1,16 @@
+# Bytes
+ml 4 20;211; mmX 
+ml 4 10;1 u99; mm s 
+ml 4 10; mm g 
+ml 8589934590 a
+ms p
+
+# Int16
+ml 4 20; 12; mma 
+ml 4 10; ml 2 1768; mm x 
+ml 4 10; mm g 
+ml 2 1768;
+md a
+ s 
+ml 4 10; mm g 
+ml d 2.2238

@@ -1,0 +1,267 @@
+ml
+######
+s test_boolean; ?n   s test_byte; 1;   s test_int16;  2;s test_int32;
+    4;
+  s 2;
+1;
+  s test_int64; 8;   s test_float32;
+f;
+
+    s test_float64;
+    d;
+
+    s test_string;
+    s;
+
+############
+
+4 9;
+s test_type;
+
+
+# Define the type
+mu d
+
+# Instantiate
+c test_type;
+
+# Verify it's on stack and show available types
+md 
+s
+i
+u
+
+# Now we're going to set get and compare each field in turn
+
+#### bool
+ml ?y
+mu 
+s test_boolean;
+g test_boolean;
+
+ml ?y
+md a
+
+#### byte
+ml 1 66;
+mu 
+s test_byte;
+g test_byte;
+
+ml 1 66;
+md a
+
+#### int16
+ml 2 32768;
+mu 
+s test_int16;
+g test_int16;
+
+ml 2 32768;
+md a
+
+#### int32
+ml 4 t96;
+mu 
+s test_int32;
+g test_int32;
+
+ml  s;
+
+############
+
+4 9;
+s test_type;
+
+
+# Define the type
+mu d
+
+# Instantiate inner
+ctest_type;
+
+# Verify it's on stack and show available types
+md 
+s
+i
+u
+
+# Now we're going to set get and compare each field in turn
+
+#### bool
+ml ?y
+mu 
+s test_boolean;
+g test_boolean;
+
+ml ?y
+md a
+
+#### byte
+mn 1 66;
+mu 
+s test_byte;
+g test_byte;
+
+ml 1 66;
+md a
+
+#### int16
+ml 2 32768;
+mu 
+s test_int16;
+g test_int16;
+
+ml 2 32768;
+md a
+
+#### int34 996;
+md a
+
+#### int64
+ml 8 99692361;
+mu 
+s test_int64;
+g test_int64;
+
+ml 8 99692361;
+mda
+
+#### float
+ml nt32;
+    4;
+  s 2;
+1;
+  s test_int64; 8;   s test_float32;
+f;
+
+    s test_float64;
+    d;
+
+    s test_string;
+    s;
+
+############
+
+4 9;
+s test_type;
+
+
+# Define the type
+mu d
+
+# Instantiate
+c test_type;
+
+# Verify it's on stack and show available types
+md 
+s
+i
+u
+
+# Now we're going to set get and compare each field in turn
+
+#### bool
+ml ?y
+mu 
+s test_boolean;
+g test_boolean;
+
+ml ?y
+md a
+
+#### byte
+ml 1 66;
+mu 
+s test_byte;
+g test_byte;
+
+ml 1 66;
+md a
+
+#### int16
+ml 2 32768;
+mu 
+s test_int16;
+g test_int16;
+
+ml 2 32768;
+md a
+
+#### int32
+ml 4 ÿÿÿ
+mu 
+s test_int32;
+g test_int32;
+
+ml  s;
+
+############
+
+4 9;
+s test_type;
+
+
+# Define the type
+mu d
+
+# Instantiate inner
+c test_type;
+
+# Verify it's on stack and show available types
+md 
+s
+i
+u
+
+# Now we're going to set get and compare each field in turn
+
+#### bool
+ml ?y
+mu 
+s test_boolean;
+g test_boolean;
+
+ml ?y
+md a
+
+#### byte
+mn 1 66;
+mu 
+s test_byte;
+g test_byte;
+
+ml 1 66;
+md a
+
+#### int16
+ml 2 32768;
+mu 
+s test_int16;
+g test_int16;
+
+ml 2 32768;
+md a
+
+#### int34 996;
+md a
+
+#### int64
+ml 8 99692361;
+mu 
+s test_int64;
+g test_int64;
+
+ml 8 99692361;
+mda
+
+#### float
+ml f 9.9;
+mu 
+f 9.9;
+mu 
+s test_float32;
+g t
+md sa
+
+ms p

@@ -1,0 +1,20 @@
+# Destination ouck
+ml 8589934590
+
+# Source, sbytes
+ml84 128;
+mm x
+
+ml 4 127; #+127b
+ml 4 1; # 1b
+
+ml 4 4;
+ms c 
+
+ml 4 0; # + 0b
+
+mm cmd s
+# Resunt_bytes;
+mc c
+
+m

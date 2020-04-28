@@ -1,0 +1,96 @@
+# byte
+ml 1 0;
+mm l
+ml 4 1;
+md a
+ms p
+
+# 
+ml ?y
+mm l
+ml 4 1;
+md a
+ms p
+
+# int16
+ml 2 0;
+mm l
+ml 4 2;
+md a
+ms p
+
+# int32
+ml 4 0;
+mm l
+ml 4 4;
+md a
+ms p
+
+# int64
+ml 8 0;
+mm l
+ml 4 8;
+md a
+ms p
+
+# Arbitrangth + \0)
+ml s eggs are a good healthy food, yes;
+
+# 33 chars = 34 long
+mm l
+ml 4 34;
+md a
+ms p
+
+# Arblocation
+ml 4 333;
+mm x
+l
+ml 4 333;
+md a
+ms p
+
+
+# UDT
+#
+ml
+
+############
+    sn»
+    ?n
+
+    s test_byte;
+    1;
+
+    s 16;
+    2;
+
+    st_int32;
+    4;
+
+     s test_byt2;
+    1;
+
+    s t4;
+    8;
+
+    s test;
+    f;
+
+    s test_float64;
+    d;
+
+    s test_string;
+    s;
+
+4 9;
+s test_type;
+
+# Define the type
+mu d
+c test_type;
+
+mm l
+ml 4 48;
+md a
+ms p

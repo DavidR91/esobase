@@ -1,0 +1,49 @@
+ml
+
+#Ltruct
+s;
+4;
+sk_2;
+4;
+s time_locale_2;
+s;
+4 3;
+s time_t_n;
+mu d
+
+#struct
+ml
+s timer;
+4;
+s ;
+4;
+se_locale;
+s;
+s inner; 2.28_n;
+ml
+4 4;
+s time_t;
+mu d
+
+#Level 1 struct
+ml
+s time;
+mu c time_t;
+ml
+4 9;
+s nested_parent;
+mu d
+
+c nested_parent;
+ c time_t;
+c time_t_n;
+
+ml s deepl;
+mu s time_locale_2;
+
+mu 
+s inner; 2 2;
+ms q
+mu
+
+ml 2 2; m
