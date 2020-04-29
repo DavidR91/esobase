@@ -59,6 +59,14 @@ void string_cat(em_state* state) {
         em_panic(state, "Expected two strings (s) to concatenate");
      }
 
+     if (a->u.v_mptr == state->null) {
+        em_panic(state, "String argument 1 for concatenation is NULL");
+     }
+
+     if (b->u.v_mptr == state->null) {
+        em_panic(state, "String argument 2 for concatenation is NULL");
+     }
+
     int a_nonul_size = (a->u.v_mptr->size - 1);
     int b_nonul_size = (b->u.v_mptr->size - 1);
 

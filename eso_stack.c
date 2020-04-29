@@ -180,7 +180,9 @@ int run_stack(em_state* state) {
                 case '1': minus += offset->u.v_byte; break;
                 case '2': minus += offset->u.v_int16; break;
                 case '4': minus += offset->u.v_int32; break;
-                case '8': minus += offset->u.v_int64; break;
+                case '8': 
+                     em_panic(state, "64 bit stack offsets are not currently supported (Attempt to copy with %llu)", offset->u.v_int64);
+                break;
                 default: 
                     em_panic(state, "Unhandled type %c in determining stack copy offset", offset->code);
                 break;

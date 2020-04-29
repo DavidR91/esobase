@@ -1,6 +1,5 @@
 // TODO
 // Global callstack with flags such as 'unsafe'
-// Strings show as having length including NUL but get errors when fetching the NUL byte 
 // Permit arbitrary byte get/set on various memory data when unsafe set
 // When inspecting types show a byte map including padding
 // Better error handling esp. inside of C calls

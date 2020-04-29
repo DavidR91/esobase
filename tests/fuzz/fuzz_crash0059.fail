@@ -1,0 +1,44 @@
+ml
+
+####
+    s test_boolean; ?n
+ s test_byte;
+    1;##
+
+4 2;
+s test_type;
+
+mu d
+
+# Create array
+ml  4 20;  1u;
+
+mm a
+
+# Offset 0
+ml 4 8;
+
+# Create an instance of our ty 0; 
+mm g
+
+# type;
+
+ml ?y mu stest_boolean;
+ml 1Z; mu stest_byte;
+
+md s
+md i
+
+# PuV it into the array
+mm s
+
+# Get it back out of the array
+ml 4 0; 
+mm g
+
+# Should have Z
+mu gtest_byte;
+ml  array
+ms pp
+
+md s
