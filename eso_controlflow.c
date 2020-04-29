@@ -40,6 +40,10 @@ int run_control(em_state* state) {
 
             state->label_ptr++;
 
+            if ((state->label_ptr + 1) >= state->max_labels) {
+                em_panic(state, "Label overflow (%d maximum of %d)", state->label_ptr, state->max_labels);
+            }
+
             char* label_name = (char*)name->u.v_mptr->raw;
             em_label* label = &state->labels[state->label_ptr];
 
@@ -75,6 +79,10 @@ int run_control(em_state* state) {
             }
 
             state->label_ptr++;
+
+            if ((state->label_ptr + 1) >= state->max_labels) {
+                em_panic(state, "Label overflow (%d maximum of %d)", state->label_ptr, state->max_labels);
+            }
 
             char* label_name = (char*)name->u.v_mptr->raw;
             em_label* label = &state->labels[state->label_ptr];
@@ -153,6 +161,44 @@ int run_control(em_state* state) {
         {
             // Toggle 'if' mode on/off
             state->control_flow_if_flag = !state->control_flow_if_flag;
+        }
+        break;
+
+        // Find the index relating to the line number at the top of the stack
+        case '$':
+        {
+            em_stack_item* location = stack_top(state);
+
+            if (location == NULL || location->code != '4') {
+                em_panic(state, "Determining location from line number requires a valid integer at stack top");
+            }
+
+            bool found_line_number = false;
+            uint32_t found_index = 0;
+            uint32_t line = 1;
+
+            for(int i = 0; i < state->len; i++) {
+                if (state->code[i] == '\n') {
+                    line++;
+
+                    if (line == location->u.v_int32) {
+                        found_index = i;
+                        found_line_number = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found_line_number) {
+                 em_panic(state, "Did not find line %d while searching for index to create location: Max line reached was %d", location->u.v_int32, line);
+            }
+
+            stack_pop(state);
+
+            int top = stack_push(state);
+            
+            state->stack[top].u.v_int32 = found_index;
+            state->stack[top].code = '4';
         }
         break;
 
