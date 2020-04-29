@@ -106,6 +106,7 @@ bool is_stack_item_numeric(em_stack_item* item) {
         case '8': 
         case 'f':
         case 'd':
+        case '^':
             return true;
         default:
             return false;

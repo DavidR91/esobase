@@ -33,6 +33,11 @@ em_state* create_state(const char* filename) {
     state->c_bindings = em_perma_alloc(state, sizeof(em_c_binding) * state->max_c_bindings);
     memset(state->c_bindings, 0, sizeof(em_c_binding) * state->max_c_bindings);
 
+    state->label_ptr = -1;
+    state->max_labels = 1024;
+    state->labels = em_perma_alloc(state, sizeof(em_label) * state->max_labels);
+    memset(state->labels, 0, sizeof(em_label) * state->max_labels);
+
     state->mode = EM_MEMORY;
 
     // Setup null
@@ -179,9 +184,8 @@ size_t code_sizeof(char code) {
         case 'd': return sizeof(double); break;
         case 's': return sizeof(em_managed_ptr*); break;
         case '*': return sizeof(void*); break;
-        case '^': return sizeof(void*); break;
         case 'u': return sizeof(em_managed_ptr*); break;
-
+        case '^': return sizeof(uint32_t); break;
     }
     return 0;
 }
@@ -202,6 +206,7 @@ bool is_code_numeric(char code) {
         case '2':
         case '4':
         case '8':
+        case '^':
             return true;
     }
 

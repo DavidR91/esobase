@@ -241,6 +241,7 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
         case '8': log_printf( "%llu", item->u.v_int64);break;
         case 'f': log_printf( "%f", item->u.v_float);break;
         case 'd': log_printf( "%f", item->u.v_double);break;
+        case '^': log_printf( "location %d", item->u.v_int32); break;
         case 's': 
         {
             if (item->u.v_mptr == state->null) {
@@ -273,7 +274,6 @@ void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
             }
         }
         break;
-        case '^': break;
         case 'u': 
         {
             if (item->u.v_mptr == state->null) {
@@ -431,8 +431,8 @@ const char* code_colour_code(char code) {
         case 'd': return "\033[0;35m"; 
         case 's': return "\033[0;31m"; 
         case '*': return "\033[0;31m"; 
-        case '^': return "\033[0;31m"; 
         case 'u': return "\033[0;96m"; 
+        case '^': return "\033[0;37m"; 
     }
 
     return "";

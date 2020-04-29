@@ -185,7 +185,6 @@ int run_literal(em_state* state) {
         return size_to_skip;
 
         case '*': break;
-        case '^': break;
 
         default:
             em_panic(state, "Unknown literal instruction %c", current_code);

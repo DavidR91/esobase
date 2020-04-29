@@ -24,6 +24,131 @@ int run_control(em_state* state) {
     }
 
     switch(current_code) {
+
+        // Create a label at the current location
+        case 'l':
+        {
+            em_stack_item* name = stack_top(state);
+
+            if (name == NULL || name->code != 's') {
+                em_panic(state, "Creating label requires a string name at stack top");
+            }
+
+            if (name->u.v_mptr == state->null) {
+                em_panic(state, "String name for creating label is NULL and cannot be used");
+            }
+
+            state->label_ptr++;
+
+            char* label_name = (char*)name->u.v_mptr->raw;
+            em_label* label = &state->labels[state->label_ptr];
+
+            label->name = em_perma_alloc(state, strlen(label_name) + 1);
+            memset(label->name, 0, strlen(label_name) + 1);
+            memcpy(label->name, label_name, strlen(label_name));
+
+            label->location = state->index+1;
+
+            log_verbose("Labelled location %d '%s'\n",  label->location, label->name);
+
+            stack_pop(state);
+        }
+        break;
+
+         // Forward-declare a label at an explicit index
+        case 'f':
+        {
+            em_stack_item* name = stack_top(state);
+
+            if (name == NULL || name->code != 's') {
+                em_panic(state, "Creating label requires a string name at stack top");
+            }
+
+            if (name->u.v_mptr == state->null) {
+                em_panic(state, "String name for creating label is NULL and cannot be used");
+            }
+
+            em_stack_item* index = stack_top_minus(state, 1);
+
+            if (index == NULL || index->code != '4') {
+                em_panic(state, "Absolute location for a forward declared label must be a valid integer at stack top - 1");
+            }
+
+            state->label_ptr++;
+
+            char* label_name = (char*)name->u.v_mptr->raw;
+            em_label* label = &state->labels[state->label_ptr];
+
+            label->name = em_perma_alloc(state, strlen(label_name) + 1);
+            memset(label->name, 0, strlen(label_name) + 1);
+            memcpy(label->name, label_name, strlen(label_name));
+
+            label->location = index->u.v_int32;
+
+            log_verbose("Labelled location %d '%s'\n",  label->location, label->name);
+
+            stack_pop(state);
+
+            stack_pop(state);
+        }
+        break;
+
+        // Jump to location
+        case 'j':
+        {
+            em_stack_item* location = stack_top(state);
+
+            if (location == NULL || location->code != '^') {                
+                em_panic(state, "Jump requires location (^) at stack top");
+            }
+
+            if (location->u.v_int32 < 0 || location->u.v_int32 >= state->len) {
+                em_panic(state, "Location %d is invalid or out of bounds", location->u.v_int32);
+            }
+
+            state->index = location->u.v_int32 - 1;
+
+        }
+        break;
+
+        // get a location by name
+        case 'g':
+        {
+            em_stack_item* name = stack_top(state);
+
+            if (name == NULL || name->code != 's') {
+                em_panic(state, "Getting label location requires a string name at stack top");
+            }
+
+            if (name->u.v_mptr == state->null) {
+                em_panic(state, "String name for getting label locationis NULL and cannot be used");
+            }
+
+            em_label* label = NULL;
+
+            // Find label by name
+            for(int i = 0; i <= state->label_ptr; i++) {
+                if (strcmp(name->u.v_mptr->raw, state->labels[i].name) == 0) {
+                    label = &state->labels[i];
+                    break;
+                }
+            }
+
+            // No such binding
+            if (label == NULL) {
+                em_panic(state, "No label name '%s'", name->u.v_mptr->raw);
+            }
+
+            stack_pop(state);
+
+            int top = stack_push(state);
+            
+            state->stack[top].u.v_int32 = label->location;
+            state->stack[top].code = '^';
+
+        }   
+        break;
+
         case 'i':
         {
             // Toggle 'if' mode on/off

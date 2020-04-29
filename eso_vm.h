@@ -25,6 +25,11 @@ typedef struct {
 } em_type_definition;
 
 typedef struct {
+    char* name;
+    uint32_t location;
+} em_label;
+
+typedef struct {
     void* raw;
     uint32_t size;
     uint16_t references; // strong references
@@ -79,6 +84,10 @@ typedef struct em_state_forward {
     em_c_binding* c_bindings;
     int max_c_bindings;
     int c_binding_ptr;
+
+    em_label* labels;
+    int max_labels;
+    int label_ptr;
 
     em_memory_use memory_permanent;
     em_memory_use memory_usercode;
