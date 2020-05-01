@@ -1,0 +1,18 @@
+ml 4 15;
+mf $
+ml s print;
+mf f
+ml s print;
+
+# 1 argument call
+mf g
+ml s Hello world!;
+ml 4 1;
+mf c
+mf x # Exit
+
+# ******* We want to call here ***************
+ml s stdio.prints;
+mc c
+ml 4 0; # no results
+mfr

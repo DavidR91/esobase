@@ -25,6 +25,12 @@ int run_control(em_state* state) {
 
     switch(current_code) {
 
+        // Exit
+        case 'x': 
+        {
+            return -1;
+        }
+
         // Create a label at the current location
         case 'l':
         {
@@ -322,6 +328,58 @@ int run_control(em_state* state) {
             state->index = jump_location - 1;
 
             // Remove argument count
+            stack_pop(state);
+
+        }
+        break;
+
+        // Return
+        //
+        // Expect
+        //
+        // [Location from]
+        // [Location in]
+        // [Return val]
+        // [Return val]
+        // [Quantity of returns as 4]
+        // 
+        case 'r':
+        {
+            uint32_t argument_count = 0;
+            uint32_t jump_location = 0;
+
+            em_stack_item* top = stack_top(state);
+
+            if (top == NULL || top->code != '4') {
+                em_panic(state, "Return requires a 4 on stack top for number of results being returned");
+            }
+
+            argument_count = top->u.v_int32;
+
+            // Should be two locations before the arguments
+
+            em_stack_item* location_in = stack_top_minus(state, argument_count + 1);
+
+            if (location_in == NULL || location_in->code != '^') {
+                em_panic(state, "Current function's location was expected at stack top - %d for return", argument_count + 1);
+            }
+
+            em_stack_item* location_return = stack_top_minus(state, argument_count + 2);
+
+            if (location_return == NULL || location_return->code != '^') {
+                em_panic(state, "Return address location was expected at stack top - %d for return", argument_count + 1);
+            }
+
+            jump_location = location_return->u.v_int32;
+
+            // Jump
+            state->index = jump_location;
+
+            // Drop the locations of where we came from and where we are
+            stack_drop(state, argument_count + 1);
+            stack_drop(state, argument_count + 1); // Would be +2 but the drop above changes its location
+
+            // Remove result count
             stack_pop(state);
 
         }

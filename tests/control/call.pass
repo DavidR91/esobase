@@ -17,11 +17,14 @@ ml 4 2;
 mf c
  
 
-# This code should not run
-ml 4 1; 4 2; md a
-
-
+ml 4 2674;  # Call should generate this result
+md a
+ms ppp  # Remove sentinels
+md s
+mf x # Exit
 
 # ******* We want to call here ***************
 mds
-
+mb +
+ml 4 1; # 1 result 
+mfr

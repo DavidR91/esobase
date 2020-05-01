@@ -1,0 +1,40 @@
+ml 4 19;
+mf $
+ml s print;
+mf f
+ml s print;
+
+ml 4 36;
+mf $
+ml s c_print;
+mf f
+
+# 1 argument call
+mf g
+ml s Hello world!;
+ml 4 1;
+mf c
+mf x # Exit
+
+# *******  Initial call ***************
+ml s c_print;
+mf g
+
+# Copy our incoming argument back to top of stack
+ml 4 2;
+ms c
+
+ml 4 1;
+mf c
+
+# Remove leftover argument
+ms p
+ml 4 0; # no results
+mfr
+
+
+# ******* Nested call (c_print) ***************
+ml s stdio.prints;
+mc c
+ml 4 0; # no results
+mfr

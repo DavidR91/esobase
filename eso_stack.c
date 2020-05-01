@@ -44,6 +44,20 @@ void stack_push_shift_up(em_state* state) {
     stack_shift_up(state, state->stack_ptr);
 }
 
+void stack_shift_down(em_state* state, int index) {
+
+    state->stack[index].code = '?';
+
+    memcpy(&state->stack[index], &state->stack[index + 1], sizeof(em_stack_item));
+
+    if (index >= state->stack_ptr) {
+        return;
+    }
+
+    stack_shift_down(state, index + 1);
+}
+
+
 // Move up every item in the stack until we hit a specific minus index and return
 // that entry (now that it's free to use because the other elements have been shifted)
 em_stack_item* stack_shift_up_index(em_state* state, int index, int stop_at_minus) {
@@ -87,6 +101,12 @@ em_stack_item* stack_insert(em_state* state, int minus) {
     } else {
         return stack_shift_up_index(state, state->stack_ptr, minus);
     }
+}
+
+void stack_drop(em_state* state, int minus) {
+    log_verbose("Drop %d\n", -minus);
+    stack_shift_down(state, state->stack_ptr - minus);
+    state->stack_ptr--;
 }
 
 em_stack_item* stack_pop(em_state* state) {

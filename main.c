@@ -202,6 +202,11 @@ void run(em_state* state) {
                     // we resume from
                     case EM_CONTROL_FLOW: 
                         i = run_control(state);
+
+                        if (i == -1) {
+                            premature_exit = true;
+                        }
+
                         continue;
                 }
 
