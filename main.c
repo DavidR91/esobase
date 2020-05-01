@@ -30,48 +30,60 @@
 #include "eso_debug.h"
 #include "eso_controlflow.h"
 #include "eso_c.h"
+#include <string.h>
 
-void run_file(const char* file);
+em_state* run_file(const char* file, bool do_assert_no_leak);
 void run(em_state* state);
+void repl(em_state* state);
 
 int main(int argc, char** argv) {
 
     if (argc < 2) {
         log_printf("REPL mode\n");
-
-        char* line = NULL;
-        size_t unhelpful_junk = 0;
-        size_t line_len = 0;
-
         em_state* state = create_state("stdin");
-
-        log_printf(">> ");
-
-        while((line_len = getline(&line, &unhelpful_junk, stdin)) != -1) {
-
-            state->code = line;
-            state->len = line_len;
-            state->index = 0;
-
-            run(state);
-            log_printf("\n>> ");
-        }
-
-        exit(0);
+        repl(state);
     }
 
-    run_file(argv[1]);
+    bool interactive_mode = (argc >= 3 && strcmp(argv[2], "--i") == 0);
+
+    em_state* state = run_file(argv[1], !interactive_mode); // Only do leak check if not interactive
+
+    if (state != NULL && interactive_mode) {
+        repl(state);
+    }
 
     return 0;
 }
 
-void run_file(const char* file) {
+void repl(em_state* state) {
+
+    char* line = NULL;
+    size_t unhelpful_junk = 0;
+    size_t line_len = 0;
+
+    log_printf(">> ");
+
+    while((line_len = getline(&line, &unhelpful_junk, stdin)) != -1) {
+
+        state->code = line;
+        state->len = line_len;
+        state->index = 0;
+
+        run(state);
+        log_printf("\n>> ");
+    }
+
+    exit(0);
+}
+
+
+em_state* run_file(const char* file, bool do_assert_no_leak) {
     FILE* input = fopen(file, "rb");
 
     if (input == NULL) {
         log_printf( "Cannot find or open %s\n", file);
         exit(1);
-        return;
+        return NULL;
     }
 
     fseek(input, 0, SEEK_END);
@@ -97,9 +109,12 @@ void run_file(const char* file) {
 
     run(state);
 
-    assert_no_leak(state);
+    if (do_assert_no_leak) {
+        assert_no_leak(state);
+    }
 
     fclose(input);
+    return state;
 }
 
 void run(em_state* state) {

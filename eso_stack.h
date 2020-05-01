@@ -14,3 +14,5 @@ bool is_stack_item_numeric(em_stack_item* item);
 int run_stack(em_state* state);
 
 em_stack_item* stack_pop_preserve_top(em_state* state, int count);
+
+em_stack_item* stack_insert(em_state* state, int minus);

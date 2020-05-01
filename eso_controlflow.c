@@ -286,6 +286,47 @@ int run_control(em_state* state) {
         }
         break;
 
+
+        // perform a call
+        // We need
+        // <location>
+        // <arguments>
+        // Argument count as 4
+        case 'c':
+        {  
+            uint32_t argument_count = 0;
+            uint32_t jump_location = 0;
+
+            em_stack_item* top = stack_top(state);
+
+            if (top == NULL || top->code != '4') {
+                em_panic(state, "Call requires a 4 on stack top of number of arguments");
+            }
+
+            argument_count = top->u.v_int32;
+
+            em_stack_item* location = stack_top_minus(state, argument_count + 1);
+
+            if (location == NULL || location->code != '^') {
+                em_panic(state, "Call expected a location to call into before %d arguments at stack top - %d", argument_count, argument_count + 1);
+            }
+
+            jump_location = location->u.v_int32;
+
+            // Record where we return to
+            em_stack_item* return_to = stack_insert(state, argument_count + 2);
+            return_to->code = '^';
+            return_to->u.v_int32 = state->index+1;
+
+            // Jump
+            state->index = jump_location - 1;
+
+            // Remove argument count
+            stack_pop(state);
+
+        }
+        break;
+
         default:
             em_panic(state, "Unknown control flow instruction %c", current_code);
             return 0;

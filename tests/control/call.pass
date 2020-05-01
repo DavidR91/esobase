@@ -1,0 +1,27 @@
+# Junk values to ensure stack insertion doesn't depend on happy path
+ml 8 342354765237;
+ml s hello world;
+ml s other data;
+
+ml 4 25;
+mf $
+ml s test;
+mf f
+ml s test;
+
+# 2 argument call
+mf g
+ml 4 1337;
+ml 4 1337;
+ml 4 2;
+mf c
+ 
+
+# This code should not run
+ml 4 1; 4 2; md a
+
+
+
+# ******* We want to call here ***************
+mds
+

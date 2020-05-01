@@ -7,6 +7,7 @@
 
 #include "eso_vm.h"
 #include "eso_log.h"
+#include "eso_debug.h"
 
 // Note that this totally erases any content in the address 
 int stack_push(em_state* state) {
@@ -20,6 +21,72 @@ int stack_push(em_state* state) {
     memset(&state->stack[state->stack_ptr], 0, sizeof(em_stack_item));
     log_verbose("Stack push result index = %d\n", state->stack_ptr);
     return state->stack_ptr;
+}
+
+// Move every item in the stack up by one, freeing a slot at the bottom.
+// Use stack_push_shift_up to call stack_push properly
+void stack_shift_up(em_state* state, int index) {
+
+    if (index < 0) {
+        return;
+    }
+
+    memcpy(&state->stack[index + 1], &state->stack[index], sizeof(em_stack_item));
+    memset(&state->stack[index], 0, sizeof(em_stack_item));
+    state->stack[index].code = '?';
+
+    return stack_shift_up(state, index - 1);
+}
+
+void stack_push_shift_up(em_state* state) {
+
+    stack_push(state);
+    stack_shift_up(state, state->stack_ptr);
+}
+
+// Move up every item in the stack until we hit a specific minus index and return
+// that entry (now that it's free to use because the other elements have been shifted)
+em_stack_item* stack_shift_up_index(em_state* state, int index, int stop_at_minus) {
+    
+    if (index + 1 > state->stack_ptr) {
+        stack_push(state);
+    }
+
+    memcpy(&state->stack[index + 1], &state->stack[index], sizeof(em_stack_item));
+    memset(&state->stack[index], 0, sizeof(em_stack_item));
+    state->stack[index].code = '?';
+
+    if (index == state->stack_ptr - stop_at_minus) {
+        return &state->stack[index];
+    }
+
+    return stack_shift_up_index(state, index - 1, stop_at_minus);
+}
+
+em_stack_item* stack_insert(em_state* state, int minus) {
+
+    int minus_as_index = state->stack_ptr - minus; // e.g. 3  -4 = -1
+
+    // Insert enough entries at the bottom of the stack if we're short
+    int missing_entries = 0;
+
+    if (minus_as_index < 0) {
+        missing_entries = abs(minus_as_index);  
+    } 
+
+    log_verbose("%d missing stack elements for -%d\n", missing_entries, minus);
+
+    if (missing_entries > 0) {
+
+        for (int missing  = 1; missing <= missing_entries; missing++) {
+            stack_push_shift_up(state);
+        }
+
+        return &state->stack[state->stack_ptr - minus];
+
+    } else {
+        return stack_shift_up_index(state, state->stack_ptr, minus);
+    }
 }
 
 em_stack_item* stack_pop(em_state* state) {

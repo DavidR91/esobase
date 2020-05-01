@@ -224,12 +224,12 @@ int run_debug(em_state* state) {
     return 0;
 }
 
-void dump_stack_item(em_state* state, em_stack_item* item, int top_index) {
+void dump_stack_item(em_state* state, em_stack_item* item, int relative_index, int top_index) {
 
     const char* type_colour = code_colour_code(item->code);
     const char* reset_colour = "\033[0m";
 
-    log_printf( "[%d]\t%s %c %s", top_index, type_colour, item->code, reset_colour);
+    log_printf( "[%2d | %2d]\t%s %c %s", relative_index, top_index, type_colour, item->code, reset_colour);
 
     log_printf( "\t=\t%s", type_colour);
 
@@ -308,7 +308,7 @@ void dump_stack(em_state* state) {
     }
 
     for (int i = stack_start; i <= stack_end; i++) {
-        dump_stack_item(state, &state->stack[i], i - state->stack_ptr);
+        dump_stack_item(state, &state->stack[i], i - state->stack_ptr, i);
     }
     log_printf( "=== Top of stack ===\n");
 }
