@@ -186,6 +186,18 @@ int run_literal(em_state* state) {
 
         case '*': break;
 
+        case 'n':
+        {
+            int top = stack_push(state);           
+
+            state->stack[top].u.v_mptr = state->null;
+            state->stack[top].code = 'u';
+
+            log_verbose("Push null literal\n");
+        }
+        return 0;
+
+
         default:
             em_panic(state, "Unknown literal instruction %c", current_code);
             return 0;

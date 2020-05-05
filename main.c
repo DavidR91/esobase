@@ -5,7 +5,6 @@
 // Better error handling esp. inside of C calls
 // Newline and escape processing
 // How to unwrap c strings out ahead of c calls?
-// callable functions (?)
 // Control flow should not seek to comments or the same symbol when set
 // Signed is broken (unsigned everywhere)
 // Fix perma allocs so they are freeable before exit
